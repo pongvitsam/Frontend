@@ -17,6 +17,9 @@ body{font-family:Sarabun,system-ui,-apple-system,Segoe UI,sans-serif;background-
 .dark .custom-scrollbar::-webkit-scrollbar-track{background:#121820}
 .custom-scrollbar::-webkit-scrollbar-thumb{background:#c9b896;border-radius:8px}
 .dark .custom-scrollbar::-webkit-scrollbar-thumb{background:#3d4a5c}
+select:not([type=checkbox]){color:#2c3542}
+.dark select,.dark input:not([type=file]):not([type=checkbox]),.dark textarea{background-color:#1a2029;color:#f5f3ee;border-color:#2d3544}
+.dark select option{background-color:#1a2029;color:#f5f3ee}
 .marquee-container{width:100%;overflow:hidden;white-space:nowrap}
 .animate-marquee{display:inline-block;padding-left:100%;animation:marquee 20s linear infinite}
 .animate-marquee:hover{animation-play-state:paused}
