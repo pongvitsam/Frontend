@@ -56,7 +56,7 @@
 <body class="min-h-screen flex flex-col transition-all duration-500">
 <div class="bg-overlay"></div>
 
-  <div id="top-banner" class="hidden bg-orange-500 text-white py-2 shadow-md w-full z-50 transition-all duration-300">
+  <div id="top-banner" class="hidden bg-[#5c4f3d] text-white py-2 shadow-md w-full z-50 transition-all duration-300">
     <div class="marquee-container">
       <span id="banner-text-display" class="animate-marquee text-sm font-medium cursor-default"></span>
     </div>
@@ -64,38 +64,38 @@
 
   <nav class="glass-nav sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-      <div class="font-bold text-xl flex items-center gap-3 text-[#524459] dark:text-[#f8f6fb] transition-colors">
-        <div class="relative h-11 w-11 shrink-0 rounded-full bg-[#e6d9f2] dark:bg-[#473b4d] border border-[#d0b3e8] dark:border-[#9b82c3] overflow-hidden shadow-sm transition-colors">
+      <div class="font-bold text-xl flex items-center gap-3 text-[#2c3542] dark:text-[#f5f3ee] transition-colors">
+        <div class="relative h-11 w-11 shrink-0 rounded-full bg-[#ebe6dc] dark:bg-[#2a3340] border border-[#c9b896] dark:border-[#8b7355] overflow-hidden shadow-sm transition-colors">
           <img id="site-logo" src="" alt="Logo" class="absolute inset-0 z-[1] hidden h-full w-full origin-center rounded-full object-cover object-center scale-[1.22]">
-          <i id="default-logo-icon" class="absolute inset-0 z-0 flex items-center justify-center fa-solid fa-solar-panel text-lg text-[#8b7a96] dark:text-[#d0b3e8]"></i>
+          <i id="default-logo-icon" class="absolute inset-0 z-0 flex items-center justify-center fa-solid fa-solar-panel text-lg text-[#6b7885] dark:text-[#c9b896]"></i>
         </div>
         กองบริการธุรกิจจัดการพลังงาน
       </div>
       <div class="flex items-center gap-3 sm:gap-4">
-        <button onclick="toggleDarkMode()" class="w-10 h-10 flex items-center justify-center rounded-full bg-[#f8f6fb] dark:bg-[#2d2337] text-[#8b7a96] dark:text-[#d0b3e8] hover:bg-[#ede6f2] dark:hover:bg-[#473b4d] transition shadow-sm border border-[#ede6f2] dark:border-[#473b4d]">
+        <button onclick="toggleDarkMode()" class="w-10 h-10 flex items-center justify-center rounded-full bg-[#f5f3ee] dark:bg-[#1a2029] text-[#6b7885] dark:text-[#c9b896] hover:bg-[#e3ddd2] dark:hover:bg-[#2a3340] transition shadow-sm border border-[#e3ddd2] dark:border-[#2d3544]">
           <i id="theme-icon" class="fa-solid fa-moon"></i>
         </button>
-        <span id="user-email" class="text-sm font-light hidden sm:block text-[#8b7a96] dark:text-[#cbbcd6]"></span>
-        <button id="btn-login" onclick="toggleLoginModal()" class="btn-pastel-purple px-5 py-2 rounded-full shadow-sm text-sm tracking-wide">ผู้ดูแลระบบ</button>
-        <button id="btn-logout" onclick="logout()" class="hidden bg-[#d69f9f] hover:bg-[#c48787] text-white px-5 py-2 rounded-full shadow-sm text-sm tracking-wide">ออกจากระบบ</button>
+        <span id="user-email" class="text-sm font-light hidden sm:block text-[#6b7885] dark:text-[#b8c0c8]"></span>
+        <button id="btn-login" onclick="toggleLoginModal()" class="btn-lux-primary px-5 py-2 rounded-full shadow-sm text-sm tracking-wide">ผู้ดูแลระบบ</button>
+        <button id="btn-logout" onclick="logout()" class="hidden bg-[#9a7b6a] hover:bg-[#7d5e52] text-white px-5 py-2 rounded-full shadow-sm text-sm tracking-wide">ออกจากระบบ</button>
       </div>
     </div>
   </nav>
 
   <div id="loading-state" class="flex flex-col items-center justify-center py-20 flex-grow">
-    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#b19cd9] dark:border-[#d0b3e8] mb-4"></div>
-    <p class="text-[#8b7a96] dark:text-[#cbbcd6] font-light">กำลังเชื่อมต่อข้อมูล...</p>
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2c3548] dark:border-[#c9b896] mb-4"></div>
+    <p class="text-[#6b7885] dark:text-[#b8c0c8] font-light">กำลังเชื่อมต่อข้อมูล...</p>
   </div>
 
   <main id="main-content" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-grow w-full">
     <div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
-      <h1 class="text-3xl font-bold text-[#473b4d] dark:text-white tracking-tight transition-colors">คลังแอปพลิเคชัน</h1>
+      <h1 class="text-3xl font-bold text-[#1f2933] dark:text-white tracking-tight transition-colors">คลังแอปพลิเคชัน</h1>
       <div class="flex gap-3">
-        <select id="sort-select" onchange="renderApps()" class="border border-[#ede6f2] dark:border-[#473b4d] bg-white dark:bg-[#2d2337] rounded-full px-4 py-2 text-sm text-[#524459] dark:text-[#f8f6fb] outline-none focus:ring-2 focus:ring-[#b19cd9] transition-colors">
+        <select id="sort-select" onchange="renderApps()" class="border border-[#e3ddd2] dark:border-[#2d3544] bg-white dark:bg-[#1a2029] rounded-full px-4 py-2 text-sm text-[#2c3542] dark:text-[#f5f3ee] outline-none focus:ring-2 focus:ring-[#2c3548] transition-colors">
           <option value="popular">เรียงตามความนิยม</option>
           <option value="az">เรียงตามตัวอักษร (A-Z)</option>
         </select>
-        <button id="btn-admin-panel" onclick="showAdminPanel()" class="hidden btn-light-purple px-5 py-2 rounded-full shadow-sm text-sm">
+        <button id="btn-admin-panel" onclick="showAdminPanel()" class="hidden btn-lux-secondary px-5 py-2 rounded-full shadow-sm text-sm">
           <i class="fa-solid fa-sliders mr-2"></i> จัดการระบบ
         </button>
       </div>
@@ -105,21 +105,21 @@
 
   <section id="admin-dashboard" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-grow w-full">
     <div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
-      <h1 class="text-3xl font-bold text-[#473b4d] dark:text-white transition-colors">แผงควบคุมผู้ดูแลระบบ</h1>
+      <h1 class="text-3xl font-bold text-[#1f2933] dark:text-white transition-colors">แผงควบคุมผู้ดูแลระบบ</h1>
       <div class="flex flex-wrap gap-2 justify-center">
-        <button onclick="toggleBannerModal()" class="bg-white dark:bg-[#2d2337] border border-[#b19cd9] dark:border-[#9b82c3] text-[#9b82c3] dark:text-[#d0b3e8] hover:bg-[#f8f6fb] dark:hover:bg-[#473b4d] px-4 py-2 rounded-full text-sm transition">
+        <button onclick="toggleBannerModal()" class="bg-white dark:bg-[#1a2029] border border-[#2c3548] dark:border-[#8b7355] text-[#8b7355] dark:text-[#c9b896] hover:bg-[#f5f3ee] dark:hover:bg-[#2a3340] px-4 py-2 rounded-full text-sm transition">
           <i class="fa-solid fa-bullhorn mr-1"></i> จัดการประกาศ
         </button>
-        <button onclick="toggleLogoModal()" class="bg-white dark:bg-[#2d2337] border border-[#b19cd9] dark:border-[#9b82c3] text-[#9b82c3] dark:text-[#d0b3e8] hover:bg-[#f8f6fb] dark:hover:bg-[#473b4d] px-4 py-2 rounded-full text-sm transition">
+        <button onclick="toggleLogoModal()" class="bg-white dark:bg-[#1a2029] border border-[#2c3548] dark:border-[#8b7355] text-[#8b7355] dark:text-[#c9b896] hover:bg-[#f5f3ee] dark:hover:bg-[#2a3340] px-4 py-2 rounded-full text-sm transition">
           <i class="fa-solid fa-stamp mr-1"></i> เปลี่ยนโลโก้
         </button>
-        <button onclick="toggleBgModal()" class="bg-white dark:bg-[#2d2337] border border-[#b19cd9] dark:border-[#9b82c3] text-[#9b82c3] dark:text-[#d0b3e8] hover:bg-[#f8f6fb] dark:hover:bg-[#473b4d] px-4 py-2 rounded-full text-sm transition">
+        <button onclick="toggleBgModal()" class="bg-white dark:bg-[#1a2029] border border-[#2c3548] dark:border-[#8b7355] text-[#8b7355] dark:text-[#c9b896] hover:bg-[#f5f3ee] dark:hover:bg-[#2a3340] px-4 py-2 rounded-full text-sm transition">
           <i class="fa-regular fa-image mr-1"></i> เปลี่ยนพื้นหลัง
         </button>
-        <button onclick="toggleProjectModal()" class="btn-pastel-purple px-5 py-2 rounded-full shadow-sm text-sm">
+        <button onclick="toggleProjectModal()" class="btn-lux-primary px-5 py-2 rounded-full shadow-sm text-sm">
           <i class="fa-solid fa-plus mr-1"></i> เพิ่มโครงการ
         </button>
-        <button onclick="hideAdminPanel()" class="bg-[#e6d9f2] dark:bg-[#473b4d] text-[#524459] dark:text-[#f8f6fb] hover:bg-[#d0b3e8] dark:hover:bg-[#9b82c3] hover:text-white px-5 py-2 rounded-full text-sm transition">
+        <button onclick="hideAdminPanel()" class="bg-[#ebe6dc] dark:bg-[#2a3340] text-[#2c3542] dark:text-[#f5f3ee] hover:bg-[#c9b896] dark:hover:bg-[#8b7355] hover:text-white px-5 py-2 rounded-full text-sm transition">
           กลับหน้าหลัก
         </button>
       </div>
@@ -127,16 +127,16 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div class="lg:col-span-2 glass-card p-8 rounded-3xl h-96 flex flex-col">
-        <h2 class="text-xl font-semibold mb-4 text-[#524459] dark:text-[#f8f6fb]">สถิติการใช้งาน</h2>
+        <h2 class="text-xl font-semibold mb-4 text-[#2c3542] dark:text-[#f5f3ee]">สถิติการใช้งาน</h2>
         <div class="flex-grow relative w-full h-full">
           <canvas id="usageChart"></canvas>
         </div>
       </div>
       <div class="glass-card p-6 rounded-3xl h-96 flex flex-col">
-        <h2 class="text-xl font-semibold mb-4 text-[#524459] dark:text-[#f8f6fb]">ประวัติล่าสุด</h2>
+        <h2 class="text-xl font-semibold mb-4 text-[#2c3542] dark:text-[#f5f3ee]">ประวัติล่าสุด</h2>
         <div class="flex-grow overflow-y-auto custom-scrollbar pr-2 h-full">
           <table class="w-full text-sm text-left">
-            <tbody id="log-table-body" class="divide-y divide-[#ede6f2] dark:divide-[#473b4d]"></tbody>
+            <tbody id="log-table-body" class="divide-y divide-[#e3ddd2] dark:divide-[#2d3544]"></tbody>
           </table>
         </div>
       </div>
@@ -144,97 +144,97 @@
   </section>
 
   <footer class="glass-nav py-6 mt-auto">
-    <div class="max-w-7xl mx-auto px-4 text-center text-sm font-light text-[#9b82c3] dark:text-[#a994b5]">
+    <div class="max-w-7xl mx-auto px-4 text-center text-sm font-light text-[#8b7355] dark:text-[#8a96a3]">
       © 2025 Pongvit Youngrod Lv.5, Ltd. All rights reserved.
     </div>
   </footer>
 
   <div id="login-modal" class="hidden fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
-    <div class="bg-white dark:bg-[#2d2337] p-8 rounded-3xl shadow-2xl w-96 border border-[#ede6f2] dark:border-[#473b4d] transition-colors">
-      <h2 class="text-2xl font-bold mb-6 text-[#473b4d] dark:text-white text-center">เข้าสู่ระบบ</h2>
-      <input type="text" id="username" placeholder="ชื่อผู้ใช้" class="w-full border border-[#ede6f2] dark:border-[#473b4d] text-[#473b4d] dark:text-white rounded-xl p-3 mb-4 bg-[#f8f6fb] dark:bg-[#1a1423] focus:border-[#b19cd9] outline-none">
-      <input type="password" id="password" placeholder="รหัสผ่าน" class="w-full border border-[#ede6f2] dark:border-[#473b4d] text-[#473b4d] dark:text-white rounded-xl p-3 mb-6 bg-[#f8f6fb] dark:bg-[#1a1423] focus:border-[#b19cd9] outline-none">
+    <div class="bg-white dark:bg-[#1a2029] p-8 rounded-3xl shadow-2xl w-96 border border-[#e3ddd2] dark:border-[#2d3544] transition-colors">
+      <h2 class="text-2xl font-bold mb-6 text-[#1f2933] dark:text-white text-center">เข้าสู่ระบบ</h2>
+      <input type="text" id="username" placeholder="ชื่อผู้ใช้" class="w-full border border-[#e3ddd2] dark:border-[#2d3544] text-[#1f2933] dark:text-white rounded-xl p-3 mb-4 bg-[#f5f3ee] dark:bg-[#121820] focus:border-[#2c3548] outline-none">
+      <input type="password" id="password" placeholder="รหัสผ่าน" class="w-full border border-[#e3ddd2] dark:border-[#2d3544] text-[#1f2933] dark:text-white rounded-xl p-3 mb-6 bg-[#f5f3ee] dark:bg-[#121820] focus:border-[#2c3548] outline-none">
       <div class="flex justify-between gap-3">
-        <button onclick="toggleLoginModal()" class="w-full py-3 text-[#8b7a96] dark:text-[#cbbcd6] bg-[#f8f6fb] dark:bg-[#1a1423] rounded-xl hover:bg-[#ede6f2] dark:hover:bg-[#473b4d] transition-colors">ยกเลิก</button>
-        <button onclick="doLogin()" class="w-full py-3 btn-pastel-purple rounded-xl">ยืนยัน</button>
+        <button onclick="toggleLoginModal()" class="w-full py-3 text-[#6b7885] dark:text-[#b8c0c8] bg-[#f5f3ee] dark:bg-[#121820] rounded-xl hover:bg-[#e3ddd2] dark:hover:bg-[#2a3340] transition-colors">ยกเลิก</button>
+        <button onclick="doLogin()" class="w-full py-3 btn-lux-primary rounded-xl">ยืนยัน</button>
       </div>
     </div>
   </div>
 
   <div id="project-modal" class="hidden fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
-    <div class="bg-white dark:bg-[#2d2337] p-8 rounded-3xl shadow-2xl w-full max-w-md border border-[#ede6f2] dark:border-[#473b4d] transition-colors">
-      <h2 id="modal-title" class="text-2xl font-bold mb-6 text-[#473b4d] dark:text-white">เพิ่มโครงการใหม่</h2>
+    <div class="bg-white dark:bg-[#1a2029] p-8 rounded-3xl shadow-2xl w-full max-w-md border border-[#e3ddd2] dark:border-[#2d3544] transition-colors">
+      <h2 id="modal-title" class="text-2xl font-bold mb-6 text-[#1f2933] dark:text-white">เพิ่มโครงการใหม่</h2>
       <div class="space-y-4">
         <div>
-          <label class="block text-sm text-[#8b7a96] dark:text-[#cbbcd6] mb-1">ชื่อโปรแกรม</label>
-          <input type="text" id="new-name" class="w-full border border-[#ede6f2] dark:border-[#473b4d] text-[#473b4d] dark:text-white rounded-xl p-3 bg-[#f8f6fb] dark:bg-[#1a1423] focus:border-[#b19cd9] outline-none">
+          <label class="block text-sm text-[#6b7885] dark:text-[#b8c0c8] mb-1">ชื่อโปรแกรม</label>
+          <input type="text" id="new-name" class="w-full border border-[#e3ddd2] dark:border-[#2d3544] text-[#1f2933] dark:text-white rounded-xl p-3 bg-[#f5f3ee] dark:bg-[#121820] focus:border-[#2c3548] outline-none">
         </div>
         <div>
-          <label class="block text-sm text-[#8b7a96] dark:text-[#cbbcd6] mb-1">URL ลิ้งก์เข้าใช้งาน</label>
-          <input type="text" id="new-url" class="w-full border border-[#ede6f2] dark:border-[#473b4d] text-[#473b4d] dark:text-white rounded-xl p-3 bg-[#f8f6fb] dark:bg-[#1a1423] focus:border-[#b19cd9] outline-none">
+          <label class="block text-sm text-[#6b7885] dark:text-[#b8c0c8] mb-1">URL ลิ้งก์เข้าใช้งาน</label>
+          <input type="text" id="new-url" class="w-full border border-[#e3ddd2] dark:border-[#2d3544] text-[#1f2933] dark:text-white rounded-xl p-3 bg-[#f5f3ee] dark:bg-[#121820] focus:border-[#2c3548] outline-none">
         </div>
         <div>
-          <label class="block text-sm text-[#8b7a96] dark:text-[#cbbcd6] mb-1">รูปภาพหน้าปก <span id="crop-status-proj" class="text-green-500 text-xs hidden">(อัปโหลดรูปสำเร็จ)</span></label>
-          <input type="file" id="new-img-file" accept="image/*" class="w-full border border-[#ede6f2] dark:border-[#473b4d] rounded-xl p-2 bg-[#f8f6fb] dark:bg-[#1a1423] text-sm text-[#8b7a96] dark:text-[#cbbcd6] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-[#e6d9f2] dark:file:bg-[#473b4d] file:text-[#524459] dark:file:text-[#f8f6fb]">
+          <label class="block text-sm text-[#6b7885] dark:text-[#b8c0c8] mb-1">รูปภาพหน้าปก <span id="crop-status-proj" class="text-green-500 text-xs hidden">(อัปโหลดรูปสำเร็จ)</span></label>
+          <input type="file" id="new-img-file" accept="image/*" class="w-full border border-[#e3ddd2] dark:border-[#2d3544] rounded-xl p-2 bg-[#f5f3ee] dark:bg-[#121820] text-sm text-[#6b7885] dark:text-[#b8c0c8] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-[#ebe6dc] dark:file:bg-[#2a3340] file:text-[#2c3542] dark:file:text-[#f5f3ee]">
         </div>
         <div>
-          <label class="block text-sm text-[#8b7a96] dark:text-[#cbbcd6] mb-1">สถานะ</label>
-          <select id="new-status" class="w-full border border-[#ede6f2] dark:border-[#473b4d] text-[#473b4d] dark:text-white rounded-xl p-3 bg-[#f8f6fb] dark:bg-[#1a1423] focus:border-[#b19cd9] outline-none">
+          <label class="block text-sm text-[#6b7885] dark:text-[#b8c0c8] mb-1">สถานะ</label>
+          <select id="new-status" class="w-full border border-[#e3ddd2] dark:border-[#2d3544] text-[#1f2933] dark:text-white rounded-xl p-3 bg-[#f5f3ee] dark:bg-[#121820] focus:border-[#2c3548] outline-none">
             <option value="พร้อมใช้งาน">พร้อมใช้งาน</option>
             <option value="กำลังพัฒนา">กำลังพัฒนา</option>
           </select>
         </div>
         <div class="flex justify-end gap-3 mt-8">
-          <button onclick="toggleProjectModal()" class="px-6 py-2.5 text-[#8b7a96] dark:text-[#cbbcd6] bg-[#f8f6fb] dark:bg-[#1a1423] rounded-full hover:bg-[#ede6f2] dark:hover:bg-[#473b4d] transition-colors">ยกเลิก</button>
-          <button onclick="submitProject()" class="px-6 py-2.5 btn-pastel-purple rounded-full shadow-md">บันทึกข้อมูล</button>
+          <button onclick="toggleProjectModal()" class="px-6 py-2.5 text-[#6b7885] dark:text-[#b8c0c8] bg-[#f5f3ee] dark:bg-[#121820] rounded-full hover:bg-[#e3ddd2] dark:hover:bg-[#2a3340] transition-colors">ยกเลิก</button>
+          <button onclick="submitProject()" class="px-6 py-2.5 btn-lux-primary rounded-full shadow-md">บันทึกข้อมูล</button>
         </div>
       </div>
     </div>
   </div>
 
   <div id="upload-modal" class="hidden fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
-    <div class="bg-white dark:bg-[#2d2337] p-8 rounded-3xl shadow-2xl w-full max-w-sm border border-[#ede6f2] dark:border-[#473b4d] text-center transition-colors">
-      <h2 id="upload-title" class="text-2xl font-bold mb-2 text-[#473b4d] dark:text-white">อัปโหลดรูปภาพ</h2>
-      <p class="text-sm text-[#8b7a96] dark:text-[#cbbcd6] mb-6">เลือกไฟล์จากอุปกรณ์ของคุณ</p>
-      <input type="file" id="upload-file" accept="image/*" class="w-full mb-2 border border-[#ede6f2] dark:border-[#473b4d] rounded-xl p-2 bg-[#f8f6fb] dark:bg-[#1a1423] text-sm text-[#8b7a96] dark:text-[#cbbcd6] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-[#e6d9f2] dark:file:bg-[#473b4d] file:text-[#524459] dark:file:text-[#f8f6fb]">
+    <div class="bg-white dark:bg-[#1a2029] p-8 rounded-3xl shadow-2xl w-full max-w-sm border border-[#e3ddd2] dark:border-[#2d3544] text-center transition-colors">
+      <h2 id="upload-title" class="text-2xl font-bold mb-2 text-[#1f2933] dark:text-white">อัปโหลดรูปภาพ</h2>
+      <p class="text-sm text-[#6b7885] dark:text-[#b8c0c8] mb-6">เลือกไฟล์จากอุปกรณ์ของคุณ</p>
+      <input type="file" id="upload-file" accept="image/*" class="w-full mb-2 border border-[#e3ddd2] dark:border-[#2d3544] rounded-xl p-2 bg-[#f5f3ee] dark:bg-[#121820] text-sm text-[#6b7885] dark:text-[#b8c0c8] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-[#ebe6dc] dark:file:bg-[#2a3340] file:text-[#2c3542] dark:file:text-[#f5f3ee]">
       <p id="crop-status-upload" class="text-green-500 text-xs mb-4 hidden">ตัดรูปภาพพร้อมอัปโหลดแล้ว!</p>
       
       <div class="flex justify-center gap-3">
-        <button onclick="closeUploadModal()" class="px-6 py-2.5 text-[#8b7a96] dark:text-[#cbbcd6] bg-[#f8f6fb] dark:bg-[#1a1423] rounded-full hover:bg-[#ede6f2] dark:hover:bg-[#473b4d] transition-colors">ยกเลิก</button>
-        <button id="btn-submit-upload" class="px-6 py-2.5 btn-pastel-purple rounded-full shadow-md">อัปโหลด</button>
+        <button onclick="closeUploadModal()" class="px-6 py-2.5 text-[#6b7885] dark:text-[#b8c0c8] bg-[#f5f3ee] dark:bg-[#121820] rounded-full hover:bg-[#e3ddd2] dark:hover:bg-[#2a3340] transition-colors">ยกเลิก</button>
+        <button id="btn-submit-upload" class="px-6 py-2.5 btn-lux-primary rounded-full shadow-md">อัปโหลด</button>
       </div>
     </div>
   </div>
 
   <div id="banner-modal" class="hidden fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
-    <div class="bg-white dark:bg-[#2d2337] p-8 rounded-3xl shadow-2xl w-full max-w-md border border-[#ede6f2] dark:border-[#473b4d] transition-colors">
-      <h2 class="text-2xl font-bold mb-6 text-[#473b4d] dark:text-white">จัดการประกาศ (Banner)</h2>
+    <div class="bg-white dark:bg-[#1a2029] p-8 rounded-3xl shadow-2xl w-full max-w-md border border-[#e3ddd2] dark:border-[#2d3544] transition-colors">
+      <h2 class="text-2xl font-bold mb-6 text-[#1f2933] dark:text-white">จัดการประกาศ (Banner)</h2>
       <div class="space-y-4">
         <div>
-          <label class="block text-sm text-[#8b7a96] dark:text-[#cbbcd6] mb-1">ข้อความประกาศ</label>
-          <textarea id="edit-banner-text" rows="3" placeholder="พิมพ์ข้อความที่ต้องการแจ้งให้ผู้ใช้งานทราบ..." class="w-full border border-[#ede6f2] dark:border-[#473b4d] text-[#473b4d] dark:text-white rounded-xl p-3 bg-[#f8f6fb] dark:bg-[#1a1423] focus:border-[#b19cd9] outline-none resize-none"></textarea>
+          <label class="block text-sm text-[#6b7885] dark:text-[#b8c0c8] mb-1">ข้อความประกาศ</label>
+          <textarea id="edit-banner-text" rows="3" placeholder="พิมพ์ข้อความที่ต้องการแจ้งให้ผู้ใช้งานทราบ..." class="w-full border border-[#e3ddd2] dark:border-[#2d3544] text-[#1f2933] dark:text-white rounded-xl p-3 bg-[#f5f3ee] dark:bg-[#121820] focus:border-[#2c3548] outline-none resize-none"></textarea>
         </div>
         <div class="flex items-center gap-2 mt-2">
-          <input type="checkbox" id="edit-banner-visible" class="w-5 h-5 accent-[#b19cd9] cursor-pointer">
-          <label for="edit-banner-visible" class="text-sm font-medium text-[#473b4d] dark:text-[#f8f6fb] cursor-pointer">เปิดแสดงประกาศหน้าเว็บไซต์</label>
+          <input type="checkbox" id="edit-banner-visible" class="w-5 h-5 accent-[#2c3548] cursor-pointer">
+          <label for="edit-banner-visible" class="text-sm font-medium text-[#1f2933] dark:text-[#f5f3ee] cursor-pointer">เปิดแสดงประกาศหน้าเว็บไซต์</label>
         </div>
         <div class="flex justify-end gap-3 mt-8">
-          <button onclick="toggleBannerModal()" class="px-6 py-2.5 text-[#8b7a96] dark:text-[#cbbcd6] bg-[#f8f6fb] dark:bg-[#1a1423] rounded-full hover:bg-[#ede6f2] dark:hover:bg-[#473b4d] transition-colors">ยกเลิก</button>
-          <button onclick="saveBanner()" class="px-6 py-2.5 btn-pastel-purple rounded-full shadow-md">บันทึกข้อมูล</button>
+          <button onclick="toggleBannerModal()" class="px-6 py-2.5 text-[#6b7885] dark:text-[#b8c0c8] bg-[#f5f3ee] dark:bg-[#121820] rounded-full hover:bg-[#e3ddd2] dark:hover:bg-[#2a3340] transition-colors">ยกเลิก</button>
+          <button onclick="saveBanner()" class="px-6 py-2.5 btn-lux-primary rounded-full shadow-md">บันทึกข้อมูล</button>
         </div>
       </div>
     </div>
   </div>
 
   <div id="cropper-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[60] p-4">
-    <div class="bg-white dark:bg-[#2d2337] p-6 rounded-3xl shadow-2xl w-full max-w-3xl flex flex-col items-center transition-colors">
-      <h2 class="text-xl font-bold mb-4 text-[#473b4d] dark:text-white">จัดตำแหน่งและตัดรูปภาพ</h2>
-      <div class="w-full h-[50vh] bg-gray-100 dark:bg-[#1a1423] rounded-xl overflow-hidden mb-6 relative">
+    <div class="bg-white dark:bg-[#1a2029] p-6 rounded-3xl shadow-2xl w-full max-w-3xl flex flex-col items-center transition-colors">
+      <h2 class="text-xl font-bold mb-4 text-[#1f2933] dark:text-white">จัดตำแหน่งและตัดรูปภาพ</h2>
+      <div class="w-full h-[50vh] bg-gray-100 dark:bg-[#121820] rounded-xl overflow-hidden mb-6 relative">
         <img id="cropper-image" class="max-w-full block" src="">
       </div>
       <div class="flex gap-3 w-full justify-center">
-        <button onclick="cancelCrop()" class="px-8 py-3 text-[#8b7a96] dark:text-[#cbbcd6] bg-[#f8f6fb] dark:bg-[#1a1423] rounded-full hover:bg-[#ede6f2] dark:hover:bg-[#473b4d] font-semibold transition-colors">ยกเลิก</button>
-        <button onclick="confirmCrop()" class="px-8 py-3 btn-pastel-purple rounded-full shadow-lg font-semibold"><i class="fa-solid fa-crop-simple mr-2"></i>ยืนยันรูปนี้</button>
+        <button onclick="cancelCrop()" class="px-8 py-3 text-[#6b7885] dark:text-[#b8c0c8] bg-[#f5f3ee] dark:bg-[#121820] rounded-full hover:bg-[#e3ddd2] dark:hover:bg-[#2a3340] font-semibold transition-colors">ยกเลิก</button>
+        <button onclick="confirmCrop()" class="px-8 py-3 btn-lux-primary rounded-full shadow-lg font-semibold"><i class="fa-solid fa-crop-simple mr-2"></i>ยืนยันรูปนี้</button>
       </div>
     </div>
   </div>

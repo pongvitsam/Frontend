@@ -272,28 +272,28 @@ let appData = [];
       sortedApps.forEach(app => {
         const isReady = app.status === 'พร้อมใช้งาน';
         const cardClass = isReady ? 'glass-card hover:-translate-y-1 transition-transform cursor-pointer' : 'glass-card grayscale-card';
-        const badgeClass = isReady ? 'bg-[#f0e6f5] dark:bg-[#473b4d] text-[#9b82c3] dark:text-[#d0b3e8]' : 'bg-[#f2f2f2] dark:bg-[#332b3d] text-[#8b7a96] dark:text-[#a994b5]';
+        const badgeClass = isReady ? 'bg-[#f0ebe3] dark:bg-[#2a3340] text-[#8b7355] dark:text-[#c9b896]' : 'bg-[#eceae5] dark:bg-[#222a35] text-[#6b7885] dark:text-[#8a96a3]';
         const imgUrl = thumbUrl(app.imageUrl);
 
         const adminControls = isAdmin 
           ? `<div class="flex items-center gap-3">
-               <span class="text-xs text-[#a994b5] dark:text-[#cbbcd6] bg-[#f8f6fb] dark:bg-[#1a1423] px-2 py-1 rounded-md transition-colors"><i class="fa-solid fa-chart-simple mr-1"></i> ${app.clicks}</span>
-               <button onclick="event.stopPropagation(); editApp('${app.id}')" class="text-[#b19cd9] hover:text-[#9b82c3] transition" title="แก้ไข"><i class="fa-solid fa-pen-to-square text-lg"></i></button>
-               <button onclick="event.stopPropagation(); deleteApp('${app.id}')" class="text-[#d69f9f] hover:text-[#c48787] transition" title="ลบ"><i class="fa-solid fa-trash text-lg"></i></button>
+               <span class="text-xs text-[#8a96a3] dark:text-[#b8c0c8] bg-[#f5f3ee] dark:bg-[#121820] px-2 py-1 rounded-md transition-colors"><i class="fa-solid fa-chart-simple mr-1"></i> ${app.clicks}</span>
+               <button onclick="event.stopPropagation(); editApp('${app.id}')" class="text-[#2c3548] hover:text-[#8b7355] transition" title="แก้ไข"><i class="fa-solid fa-pen-to-square text-lg"></i></button>
+               <button onclick="event.stopPropagation(); deleteApp('${app.id}')" class="text-[#9a7b6a] hover:text-[#7d5e52] transition" title="ลบ"><i class="fa-solid fa-trash text-lg"></i></button>
              </div>` : ``;
 
         grid.innerHTML += `
           <div class="rounded-3xl overflow-hidden flex flex-col ${cardClass}" onclick="openApp('${app.id}', '${app.name}', '${app.url}', ${isReady})">
-            <div class="h-40 w-full overflow-hidden border-b border-[#ede6f2] dark:border-[#473b4d] transition-colors bg-[#ede6f2] dark:bg-[#332b3d]">
+            <div class="h-40 w-full overflow-hidden border-b border-[#e3ddd2] dark:border-[#2d3544] transition-colors bg-[#e3ddd2] dark:bg-[#222a35]">
               <img src="${imgUrl}" alt="" class="h-40 w-full object-cover" width="400" height="160" loading="lazy" decoding="async" fetchpriority="low" />
             </div>
             <div class="p-6 flex-grow flex flex-col justify-between">
               <div>
-                <h3 class="font-bold text-lg mb-2 text-[#473b4d] dark:text-[#f8f6fb] break-words transition-colors">${app.name}</h3>
+                <h3 class="font-bold text-lg mb-2 text-[#1f2933] dark:text-[#f5f3ee] break-words transition-colors">${app.name}</h3>
                 <span class="text-xs font-medium px-3 py-1 rounded-full ${badgeClass} transition-colors">${app.status}</span>
               </div>
               <div class="mt-5 flex justify-between items-end">
-                <div class="w-8 h-8 rounded-full bg-[#f8f6fb] dark:bg-[#1a1423] flex items-center justify-center text-[#b19cd9] shadow-inner transition-colors">
+                <div class="w-8 h-8 rounded-full bg-[#f5f3ee] dark:bg-[#121820] flex items-center justify-center text-[#2c3548] shadow-inner transition-colors">
                   <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
                 </div>
                 ${adminControls}
@@ -435,12 +435,12 @@ let appData = [];
         text: "ข้อมูลโปรเจกต์นี้จะไม่สามารถกู้คืนได้!",
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#d69f9f',
-        cancelButtonColor: '#b19cd9',
+        confirmButtonColor: '#9a7b6a',
+        cancelButtonColor: '#2c3548',
         confirmButtonText: '<i class="fa-solid fa-trash mr-2"></i>ใช่, ลบเลย!',
         cancelButtonText: 'ยกเลิก',
-        background: document.documentElement.classList.contains('dark') ? '#2d2337' : '#ffffff',
-        color: document.documentElement.classList.contains('dark') ? '#f8f6fb' : '#473b4d'
+        background: document.documentElement.classList.contains('dark') ? '#1a2029' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#f5f3ee' : '#1f2933'
       }).then((result) => {
         if (result.isConfirmed) {
           showLoadingUI();
@@ -454,9 +454,9 @@ let appData = [];
               title: 'ลบสำเร็จ!',
               text: 'โปรเจกต์ถูกลบออกจากระบบแล้ว',
               icon: 'success',
-              confirmButtonColor: '#b19cd9',
-              background: document.documentElement.classList.contains('dark') ? '#2d2337' : '#ffffff',
-              color: document.documentElement.classList.contains('dark') ? '#f8f6fb' : '#473b4d'
+              confirmButtonColor: '#2c3548',
+              background: document.documentElement.classList.contains('dark') ? '#1a2029' : '#ffffff',
+              color: document.documentElement.classList.contains('dark') ? '#f5f3ee' : '#1f2933'
             });
             
           }).deleteProject(id);
@@ -496,11 +496,11 @@ let appData = [];
     function renderAdminDashboard(data) {
       const tbody = document.getElementById('log-table-body');
       tbody.innerHTML = data.logs.map(log => `
-        <tr class="hover:bg-[#f8f6fb] dark:hover:bg-[#3b2d47] transition border-b border-[#ede6f2] dark:border-[#473b4d] last:border-0">
-          <td class="py-3 pl-2 whitespace-nowrap text-[#a994b5] dark:text-[#cbbcd6] text-xs transition-colors">${log.time}</td>
+        <tr class="hover:bg-[#f5f3ee] dark:hover:bg-[#2a3340] transition border-b border-[#e3ddd2] dark:border-[#2d3544] last:border-0">
+          <td class="py-3 pl-2 whitespace-nowrap text-[#8a96a3] dark:text-[#b8c0c8] text-xs transition-colors">${log.time}</td>
           <td class="py-3 pr-2">
-            <div class="font-medium text-[#524459] dark:text-[#f8f6fb] transition-colors">${log.appName}</div>
-            <div class="text-[11px] text-[#8b7a96] dark:text-[#cbbcd6] bg-[#f8f6fb] dark:bg-[#1a1423] inline-block px-2 py-0.5 rounded mt-1 transition-colors">${log.email}</div>
+            <div class="font-medium text-[#2c3542] dark:text-[#f5f3ee] transition-colors">${log.appName}</div>
+            <div class="text-[11px] text-[#6b7885] dark:text-[#b8c0c8] bg-[#f5f3ee] dark:bg-[#121820] inline-block px-2 py-0.5 rounded mt-1 transition-colors">${log.email}</div>
           </td>
         </tr>`).join('');
 
@@ -508,12 +508,12 @@ let appData = [];
       if(chartInstance) chartInstance.destroy();
       
       const isDark = document.documentElement.classList.contains('dark');
-      const gridColor = isDark ? '#473b4d' : '#ede6f2';
-      const tickColor = isDark ? '#cbbcd6' : '#8b7a96';
+      const gridColor = isDark ? '#1f2933' : '#e3ddd2';
+      const tickColor = isDark ? '#b8c0c8' : '#6b7885';
 
       chartInstance = new Chart(ctx, {
         type: 'bar',
-        data: { labels: appData.map(a => a.name), datasets: [{ label: 'ยอดใช้งาน', data: appData.map(a => a.clicks), backgroundColor: '#b19cd9', borderRadius: 6, maxBarThickness: 40 }] },
+        data: { labels: appData.map(a => a.name), datasets: [{ label: 'ยอดใช้งาน', data: appData.map(a => a.clicks), backgroundColor: '#2c3548', borderRadius: 6, maxBarThickness: 40 }] },
         options: { 
           responsive: true, maintainAspectRatio: false, 
           plugins: { legend: { display: false } }, 
