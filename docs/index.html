@@ -2,6 +2,7 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>กองบริการธุรกิจจัดการพลังงาน</title>
   <script>
     if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -10,7 +11,7 @@
       document.documentElement.classList.remove('dark');
     }
   </script>
-  <link rel="stylesheet" href="https://pongvitsam.github.io/Frontend/styles.css">
+  <link rel="stylesheet" href="styles.css">
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -200,8 +201,9 @@
       </div>
     </div>
   </div>
-  <script src="https://pongvitsam.github.io/Frontend/config.js"></script>
-  <script src="https://pongvitsam.github.io/Frontend/gas-client.js"></script>
-  <script src="https://pongvitsam.github.io/Frontend/app.js"></script>
+  <script src="config.js"></script>
+  <script src="gas-client.js"></script>
+  <iframe id="gas-bridge-frame" src="https://script.google.com/macros/s/AKfycby8V8L2CRZINAgkEcqfwjduA8w_7Yrl9t5AoQmISqtzq9BsghYbVjKOlZHvMuZdVUsagw/exec?page=bridge" style="position:absolute;width:0;height:0;border:0;visibility:hidden" title="GAS Bridge"></iframe>
+  <script src="app.js"></script>
 </body>
 </html>

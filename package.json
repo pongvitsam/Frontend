@@ -4,9 +4,10 @@
   "private": true,
   "description": "กองบริการธุรกิจจัดการพลังงาน — Google Apps Script Web App",
   "scripts": {
+    "build:pages": "node scripts/build-pages.mjs",
     "pull": "clasp pull",
     "push": "clasp push",
-    "deploy": "clasp push && clasp deploy -i AKfycby8V8L2CRZINAgkEcqfwjduA8w_7Yrl9t5AoQmISqtzq9BsghYbVjKOlZHvMuZdVUsagw -d \"Production\"",
+    "deploy": "npm run build:pages && clasp push && clasp deploy -i AKfycby8V8L2CRZINAgkEcqfwjduA8w_7Yrl9t5AoQmISqtzq9BsghYbVjKOlZHvMuZdVUsagw -d \"Production\"",
     "deployments": "clasp deployments"
   },
   "devDependencies": {

@@ -3,6 +3,10 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 Set-Location $root
 
+Write-Host "Building GitHub Pages assets..." -ForegroundColor Cyan
+npm run build:pages
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
 Write-Host "Pushing source to Apps Script..." -ForegroundColor Cyan
 clasp push
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

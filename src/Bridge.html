@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+</head>
+<body>
+<script>
+(function () {
+  var ALLOWED = ['https://pongvitsam.github.io'];
+
+  function reply_(source, origin, payload) {
+    try {
+      source.postMessage(payload, origin);
+    } catch (e) {}
+  }
+
+  window.addEventListener('message', function (e) {
+    if (ALLOWED.indexOf(e.origin) === -1) return;
+    var msg = e.data;
+    if (!msg) return;
+
+    if (msg.type === 'gas-bridge-ping') {
+      reply_(e.source, e.origin, { type: 'gas-bridge', ready: true });
+      return;
+    }
+
+    if (msg.type !== 'gas-bridge' || !msg.function) return;
+
+    var fn = msg.function;
+    var args = msg.args || [];
+    var runner = google.script.run
+      .withSuccessHandler(function (result) {
+        reply_(e.source, e.origin, { type: 'gas-bridge', id: msg.id, ok: true, result: result });
+      })
+      .withFailureHandler(function (err) {
+        reply_(e.source, e.origin, {
+          type: 'gas-bridge',
+          id: msg.id,
+          ok: false,
+          error: err && err.message ? err.message : String(err),
+        });
+      });
+
+    if (typeof runner[fn] !== 'function') {
+      reply_(e.source, e.origin, {
+        type: 'gas-bridge',
+        id: msg.id,
+        ok: false,
+        error: 'Unknown function: ' + fn,
+      });
+      return;
+    }
+    runner[fn].apply(runner, args);
+  });
+
+  if (window.parent !== window) {
+    ALLOWED.forEach(function (origin) {
+      try {
+        window.parent.postMessage({ type: 'gas-bridge', ready: true }, origin);
+      } catch (e) {}
+    });
+  }
+})();
+</script>
+</body>
+</html>

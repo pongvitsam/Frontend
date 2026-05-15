@@ -1,3 +1,4 @@
+// Web app + API backend
 const SHEET_ID = '1-bTU1X8fgcSGOBWWQHVYdwrFgGddciORQvPuYtqzCk4';
 const DRIVE_FOLDER_ID = '1UU2U11ve_75YQbs0WiP0WzaVQK5ZVwS6';
 const CACHE_TTL_INITIAL_SEC = 900;
@@ -28,7 +29,13 @@ function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
-function doGet() {
+function doGet(e) {
+  var params = (e && e.parameter) || {};
+  if (params.page === 'bridge') {
+    return HtmlService.createHtmlOutputFromFile('Bridge')
+      .setTitle('GAS Bridge')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  }
   return HtmlService.createTemplateFromFile('Index')
     .evaluate()
     .setTitle('กองบริการธุรกิจจัดการพลังงาน')
