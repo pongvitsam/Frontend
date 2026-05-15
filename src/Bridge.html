@@ -7,16 +7,30 @@
 <body>
 <script>
 (function () {
-  var ALLOWED = ['https://pongvitsam.github.io'];
+  function isAllowedParentOrigin(origin) {
+    if (!origin) return false;
+    if (origin === 'https://pongvitsam.github.io') return true;
+    if (origin.indexOf('https://pongvitsam.github.io/') === 0) return true;
+    if (origin.indexOf('http://localhost') === 0) return true;
+    if (origin.indexOf('https://script.google.com') === 0) return true;
+    if (origin.indexOf('https://script.googleusercontent.com') === 0) return true;
+    if (/^https:\/\/n-[a-z0-9]+-script\.googleusercontent\.com$/i.test(origin)) return true;
+    return false;
+  }
 
   function reply_(source, origin, payload) {
+    if (!source || !isAllowedParentOrigin(origin)) return;
     try {
       source.postMessage(payload, origin);
-    } catch (e) {}
+    } catch (e) {
+      try {
+        source.postMessage(payload, '*');
+      } catch (e2) {}
+    }
   }
 
   window.addEventListener('message', function (e) {
-    if (ALLOWED.indexOf(e.origin) === -1) return;
+    if (!isAllowedParentOrigin(e.origin)) return;
     var msg = e.data;
     if (!msg) return;
 
@@ -55,11 +69,9 @@
   });
 
   if (window.parent !== window) {
-    ALLOWED.forEach(function (origin) {
-      try {
-        window.parent.postMessage({ type: 'gas-bridge', ready: true }, origin);
-      } catch (e) {}
-    });
+    try {
+      window.parent.postMessage({ type: 'gas-bridge', ready: true }, '*');
+    } catch (e) {}
   }
 })();
 </script>
