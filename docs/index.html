@@ -11,6 +11,44 @@
       document.documentElement.classList.remove('dark');
     }
   </script>
+  <link rel="dns-prefetch" href="https://script.google.com">
+  <link rel="preconnect" href="https://script.google.com" crossorigin>
+  <script>
+  (function () {
+    var LS_KEY = 'pk2_initial_ls_v1';
+    var GAS_API = 'https://script.google.com/macros/s/AKfycby8V8L2CRZINAgkEcqfwjduA8w_7Yrl9t5AoQmISqtzq9BsghYbVjKOlZHvMuZdVUsagw/exec';
+    var MAX_AGE = 86400000;
+
+    try {
+      var raw = localStorage.getItem(LS_KEY);
+      if (raw) {
+        var o = JSON.parse(raw);
+        if (o && o.data && o.data.apps && Date.now() - o.t < MAX_AGE) {
+          window.__BOOT_DATA__ = o.data;
+        }
+      }
+    } catch (e) {}
+
+    var cb = '__pf_' + Date.now();
+    window[cb] = function (res) {
+      try { delete window[cb]; } catch (e) {}
+      var el = document.getElementById('gas-prefetch');
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+      if (res && res.ok && res.data) {
+        window.__PREFETCH_DATA__ = res.data;
+        try {
+          localStorage.setItem(LS_KEY, JSON.stringify({ t: Date.now(), data: res.data }));
+        } catch (e) {}
+      }
+    };
+    var s = document.createElement('script');
+    s.id = 'gas-prefetch';
+    s.async = true;
+    s.src = GAS_API + '?action=getInitialData&callback=' + encodeURIComponent(cb);
+    document.head.appendChild(s);
+  })();
+  </script>
+
   <link rel="stylesheet" href="styles.css">
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -201,9 +239,9 @@
       </div>
     </div>
   </div>
-  <script src="config.js?v=4"></script>
-  <script src="gas-client.js?v=4"></script>
+  <script src="config.js?v=5"></script>
+  <script src="gas-client.js?v=5"></script>
   <iframe id="gas-bridge-frame" src="https://script.google.com/macros/s/AKfycby8V8L2CRZINAgkEcqfwjduA8w_7Yrl9t5AoQmISqtzq9BsghYbVjKOlZHvMuZdVUsagw/exec?page=bridge" style="position:absolute;width:0;height:0;border:0;visibility:hidden" title="GAS Bridge"></iframe>
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>

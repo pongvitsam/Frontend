@@ -71,9 +71,34 @@ let appData = [];
 
     var SESSION_CACHE_KEY = 'pk2_initial_v4';
     var SESSION_CACHE_MS = 8 * 60 * 1000;
+    var LOCAL_CACHE_KEY = 'pk2_initial_ls_v1';
+    var LOCAL_CACHE_MS = 24 * 60 * 60 * 1000;
 
     function invalidateSessionCache() {
       try { sessionStorage.removeItem(SESSION_CACHE_KEY); } catch (e) {}
+      try { localStorage.removeItem(LOCAL_CACHE_KEY); } catch (e) {}
+    }
+
+    function persistCache(data) {
+      var payload = JSON.stringify({ t: Date.now(), data: data });
+      try { sessionStorage.setItem(SESSION_CACHE_KEY, payload); } catch (e) {}
+      try { localStorage.setItem(LOCAL_CACHE_KEY, payload); } catch (e) {}
+    }
+
+    function readCachedPayload() {
+      if (window.__PREFETCH_DATA__ && window.__PREFETCH_DATA__.apps) {
+        return { t: Date.now(), data: window.__PREFETCH_DATA__ };
+      }
+      if (window.__BOOT_DATA__ && window.__BOOT_DATA__.apps) {
+        return { t: Date.now(), data: window.__BOOT_DATA__ };
+      }
+      try {
+        var raw = sessionStorage.getItem(SESSION_CACHE_KEY) || localStorage.getItem(LOCAL_CACHE_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch (e) {
+        return null;
+      }
     }
 
     function thumbUrl(url) {
@@ -85,18 +110,15 @@ let appData = [];
       return url;
     }
 
-    function tryHydrateFromSession() {
-      try {
-        var raw = sessionStorage.getItem(SESSION_CACHE_KEY);
-        if (!raw) return false;
-        var o = JSON.parse(raw);
-        if (Date.now() - o.t > SESSION_CACHE_MS) return false;
-        if (!o.data || !Array.isArray(o.data.apps)) return false;
-        initApp(o.data, { fromSession: true });
-        return true;
-      } catch (e) {
-        return false;
-      }
+    function tryHydrateFromCache() {
+      var o = readCachedPayload();
+      if (!o || !o.data || !Array.isArray(o.data.apps)) return false;
+      var maxAge = o.data === window.__BOOT_DATA__ || o.data === window.__PREFETCH_DATA__
+        ? LOCAL_CACHE_MS
+        : (localStorage.getItem(LOCAL_CACHE_KEY) ? LOCAL_CACHE_MS : SESSION_CACHE_MS);
+      if (Date.now() - o.t > maxAge) return false;
+      initApp(o.data, { fromCache: true });
+      return true;
     }
 
     function syncThemeIcon() {
@@ -118,11 +140,27 @@ let appData = [];
       await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js');
     }
 
+    function refreshDataInBackground() {
+      gasRun()
+        .withSuccessHandler(function (data) {
+          initApp(data, { silent: true });
+        })
+        .withFailureHandler(function () {})
+        .getInitialData();
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
       syncThemeIcon();
       loadFontAwesomeDeferred();
       loadSarabunDeferred();
-      var hadSession = tryHydrateFromSession();
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(function () {});
+      }
+      var hadCache = tryHydrateFromCache();
+      if (hadCache) {
+        refreshDataInBackground();
+        return;
+      }
       var loadTimer = setTimeout(function() {
         var el = document.getElementById('loading-state');
         var main = document.getElementById('main-content');
@@ -133,15 +171,13 @@ let appData = [];
       gasRun()
         .withSuccessHandler(function(data) {
           clearTimeout(loadTimer);
-          initApp(data, { fromSession: false });
+          initApp(data, { fromCache: false });
         })
         .withFailureHandler(function(err) {
           clearTimeout(loadTimer);
           console.error(err);
-          if (!hadSession) {
-            var el = document.getElementById('loading-state');
-            if (el) el.innerHTML = '<p class="text-center text-red-500 px-4">โหลดข้อมูลไม่สำเร็จ โปรดรีเฟรชหน้า</p>';
-          }
+          var el = document.getElementById('loading-state');
+          if (el) el.innerHTML = '<p class="text-center text-red-500 px-4">โหลดข้อมูลไม่สำเร็จ โปรดรีเฟรชหน้า</p>';
         })
         .getInitialData();
     });
@@ -184,10 +220,8 @@ let appData = [];
       document.getElementById('main-content').classList.remove('hidden');
       renderApps();
 
-      if (!opts.fromSession) {
-        try {
-          sessionStorage.setItem(SESSION_CACHE_KEY, JSON.stringify({ t: Date.now(), data: data }));
-        } catch (e) {}
+      if (!opts.silent) {
+        persistCache(data);
       }
     }
 

@@ -12,7 +12,11 @@ const deployConfig = JSON.parse(fs.readFileSync(path.join(root, 'deploy.config.j
 const PAGES_BASE = 'https://pongvitsam.github.io/Frontend';
 const GAS_EXEC = deployConfig.productionUrl;
 const GAS_BRIDGE = GAS_EXEC + (GAS_EXEC.includes('?') ? '&' : '?') + 'page=bridge';
-const ASSET_V = deployConfig.assetVersion || '4';
+const ASSET_V = deployConfig.assetVersion || '5';
+
+const instantBoot = fs
+  .readFileSync(path.join(__dirname, 'instant-boot.template.html'), 'utf8')
+  .replace(/__GAS_EXEC_URL__/g, GAS_EXEC);
 
 function readAppClientSource() {
   const clientPath = path.join(clientDir, 'app.client.js');
@@ -81,6 +85,7 @@ const pagesIndex = `<!DOCTYPE html>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>กองบริการธุรกิจจัดการพลังงาน</title>
   ${themeScript}
+${instantBoot}
   <link rel="stylesheet" href="styles.css">
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -103,6 +108,7 @@ const gasIndex = `<!DOCTYPE html>
   <meta charset="UTF-8">
   <title>กองบริการธุรกิจจัดการพลังงาน</title>
   ${themeScript}
+${instantBoot}
   <?!= include('Styles'); ?>
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com">
