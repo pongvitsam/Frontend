@@ -168,10 +168,48 @@ let appData = [];
       }).then(done).catch(done);
     }
 
+    var SORT_LABELS = { popular: 'เรียงตามความนิยม', az: 'เรียงตามตัวอักษร (A-Z)' };
+
+    function initSortDropdown() {
+      var toggle = document.getElementById('sort-toggle');
+      var menu = document.getElementById('sort-menu');
+      var hidden = document.getElementById('sort-select');
+      var label = document.getElementById('sort-label');
+      var wrap = document.getElementById('sort-dropdown-wrap');
+      if (!toggle || !menu || !hidden) return;
+
+      toggle.addEventListener('click', function (e) {
+        e.stopPropagation();
+        menu.classList.toggle('hidden');
+      });
+
+      menu.querySelectorAll('[data-sort]').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var val = btn.getAttribute('data-sort');
+          hidden.value = val;
+          if (label) label.textContent = SORT_LABELS[val] || val;
+          menu.querySelectorAll('[data-sort]').forEach(function (b) {
+            b.classList.toggle('sort-opt-active', b === btn);
+          });
+          menu.classList.add('hidden');
+          renderApps();
+        });
+      });
+
+      if (wrap) {
+        wrap.addEventListener('click', function (e) { e.stopPropagation(); });
+      }
+      document.addEventListener('click', function () {
+        menu.classList.add('hidden');
+      });
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
       syncThemeIcon();
       loadFontAwesomeDeferred();
       loadSarabunDeferred();
+      initSortDropdown();
       var expectedV = (window.APP_CONFIG && window.APP_CONFIG.assetVersion) || '';
       if (expectedV && localStorage.getItem('pk2_asset_v') !== expectedV) {
         purgeStaleCachesAndReload(expectedV);

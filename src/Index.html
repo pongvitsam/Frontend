@@ -91,10 +91,17 @@
     <div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
       <h1 class="text-3xl font-bold text-[#1f2933] dark:text-white tracking-tight transition-colors">คลังแอปพลิเคชัน</h1>
       <div class="flex gap-3">
-        <select id="sort-select" onchange="renderApps()" class="border border-[#e3ddd2] dark:border-[#2d3544] bg-white dark:bg-[#2d2337] rounded-full px-4 py-2 text-sm text-[#524459] dark:text-[#f8f6fb] outline-none focus:ring-2 focus:ring-[#2c3548] transition-colors">
-          <option value="popular">เรียงตามความนิยม</option>
-          <option value="az">เรียงตามตัวอักษร (A-Z)</option>
-        </select>
+        <div class="relative" id="sort-dropdown-wrap">
+          <input type="hidden" id="sort-select" value="popular">
+          <button type="button" id="sort-toggle" class="lux-select-btn outline-none focus:ring-2 focus:ring-[#2c3548]">
+            <span id="sort-label">เรียงตามความนิยม</span>
+            <i class="fa-solid fa-chevron-down text-xs opacity-70 ml-2"></i>
+          </button>
+          <div id="sort-menu" class="sort-menu hidden absolute right-0 z-50 mt-2 min-w-[220px] py-1 shadow-lg">
+            <button type="button" data-sort="popular" class="sort-opt sort-opt-active">เรียงตามความนิยม</button>
+            <button type="button" data-sort="az" class="sort-opt">เรียงตามตัวอักษร (A-Z)</button>
+          </div>
+        </div>
         <button id="btn-admin-panel" onclick="showAdminPanel()" class="hidden btn-lux-secondary px-5 py-2 rounded-full shadow-sm text-sm">
           <i class="fa-solid fa-sliders mr-2"></i> จัดการระบบ
         </button>

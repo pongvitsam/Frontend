@@ -17,9 +17,18 @@ body{font-family:Sarabun,system-ui,-apple-system,Segoe UI,sans-serif;background-
 .dark .custom-scrollbar::-webkit-scrollbar-track{background:#121820}
 .custom-scrollbar::-webkit-scrollbar-thumb{background:#c9b896;border-radius:8px}
 .dark .custom-scrollbar::-webkit-scrollbar-thumb{background:#3d4a5c}
+html.dark{color-scheme:dark}
 select:not([type=checkbox]){color:#2c3542}
 .dark select,.dark input:not([type=file]):not([type=checkbox]),.dark textarea{background-color:#1a2029;color:#f5f3ee;border-color:#2d3544}
 .dark select option{background-color:#1a2029;color:#f5f3ee}
+.lux-select-btn{display:inline-flex;align-items:center;border:1px solid #e3ddd2;background:#fff;color:#2c3542;border-radius:9999px;padding:.5rem 1rem;font-size:.875rem;cursor:pointer;transition:background .2s,border-color .2s,color .2s}
+.dark .lux-select-btn{background:#1a2029;color:#f5f3ee;border-color:#2d3544}
+.sort-menu{background:#fff;border:1px solid #e3ddd2;border-radius:.75rem}
+.dark .sort-menu{background:#1a2029;border-color:#2d3544}
+.sort-opt{display:block;width:100%;text-align:left;padding:.625rem 1rem;font-size:.875rem;color:#2c3542;background:transparent;border:0;cursor:pointer;transition:background .15s}
+.dark .sort-opt{color:#f5f3ee}
+.sort-opt:hover,.sort-opt.sort-opt-active{background:#ebe6dc}
+.dark .sort-opt:hover,.dark .sort-opt.sort-opt-active{background:#2a3340}
 .marquee-container{width:100%;overflow:hidden;white-space:nowrap}
 .animate-marquee{display:inline-block;padding-left:100%;animation:marquee 20s linear infinite}
 .animate-marquee:hover{animation-play-state:paused}
