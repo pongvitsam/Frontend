@@ -68,10 +68,17 @@ fs.writeFileSync(
       gasExecUrl: GAS_EXEC,
       gasBridgeUrl: GAS_BRIDGE,
       bridgeOrigins: ['https://pongvitsam.github.io'],
+      assetVersion: ASSET_V,
     },
     null,
     2
   )};\n`
+);
+
+const swTemplate = fs.readFileSync(path.join(__dirname, 'sw.template.js'), 'utf8');
+fs.writeFileSync(
+  path.join(docsDir, 'sw.js'),
+  swTemplate.replace(/__ASSET_V__/g, ASSET_V)
 );
 
 const gasClient = fs.readFileSync(path.join(__dirname, 'gas-client.template.js'), 'utf8');
@@ -86,7 +93,7 @@ const pagesIndex = `<!DOCTYPE html>
   <title>กองบริการธุรกิจจัดการพลังงาน</title>
   ${themeScript}
 ${instantBoot}
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=${ASSET_V}">
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

@@ -149,10 +149,33 @@ let appData = [];
         .getInitialData();
     }
 
+    function purgeStaleCachesAndReload(expectedV) {
+      localStorage.setItem('pk2_asset_v', expectedV);
+      var done = function () { location.reload(); };
+      var p = Promise.resolve();
+      if ('caches' in window) {
+        p = caches.keys().then(function (keys) {
+          return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+        });
+      }
+      p.then(function () {
+        if ('serviceWorker' in navigator) {
+          return navigator.serviceWorker.getRegistrations().then(function (regs) {
+            return Promise.all(regs.map(function (r) { return r.unregister(); }));
+          });
+        }
+      }).then(done).catch(done);
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
       syncThemeIcon();
       loadFontAwesomeDeferred();
       loadSarabunDeferred();
+      var expectedV = (window.APP_CONFIG && window.APP_CONFIG.assetVersion) || '';
+      if (expectedV && localStorage.getItem('pk2_asset_v') !== expectedV) {
+        purgeStaleCachesAndReload(expectedV);
+        return;
+      }
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js').catch(function () {});
       }
