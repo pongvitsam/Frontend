@@ -29,6 +29,25 @@ function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
+/** หน้าเว็บหลัก — GitHub Pages (โหลดเร็ว) */
+var PAGES_URL = 'https://pongvitsam.github.io/Frontend/';
+
+function redirectToPages_() {
+  var safeUrl = PAGES_URL.replace(/"/g, '&quot;');
+  var html =
+    '<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">' +
+    '<meta http-equiv="refresh" content="0;url=' + safeUrl + '">' +
+    '<title>กำลังเปลี่ยนเส้นทาง…</title>' +
+    '<script>location.replace(' + JSON.stringify(PAGES_URL) + ');</script>' +
+    '</head><body style="font-family:system-ui,sans-serif;text-align:center;padding:3rem;color:#524459">' +
+    '<p>กำลังเปิดหน้าเว็บ…</p>' +
+    '<p><a href="' + safeUrl + '">คลิกที่นี่</a> หากไม่เปลี่ยนอัตโนมัติ</p>' +
+    '</body></html>';
+  return HtmlService.createHtmlOutput(html)
+    .setTitle('กำลังเปลี่ยนเส้นทาง…')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
 function doGet(e) {
   var params = (e && e.parameter) || {};
   if (params.page === 'bridge') {
@@ -39,11 +58,15 @@ function doGet(e) {
   if (params.action) {
     return handleApiRequest_(params);
   }
-  return HtmlService.createTemplateFromFile('Index')
-    .evaluate()
-    .setTitle('กองบริการธุรกิจจัดการพลังงาน')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
+  // ?gas=1 เปิด UI บน GAS โดยตรง (สำรอง)
+  if (params.gas === '1' || params.legacy === '1') {
+    return HtmlService.createTemplateFromFile('Index')
+      .evaluate()
+      .setTitle('กองบริการธุรกิจจัดการพลังงาน')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
+  }
+  return redirectToPages_();
 }
 
 function handleApiRequest_(params) {

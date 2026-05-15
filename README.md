@@ -6,10 +6,11 @@
 
 | ช่องทาง | URL |
 |--------|-----|
-| **GitHub Pages (เร็ว)** | https://pongvitsam.github.io/Frontend/ |
-| **URL เดิม (GAS)** | https://script.google.com/macros/s/AKfycby8V8L2CRZINAgkEcqfwjduA8w_7Yrl9t5AoQmISqtzq9BsghYbVjKOlZHvMuZdVUsagw/exec |
+| **หน้าหลัก (เร็วที่สุด)** | https://pongvitsam.github.io/Frontend/ |
+| **ลิงก์เดิม (GAS)** | https://script.google.com/macros/s/AKfycby8V8L2CRZINAgkEcqfwjduA8w_7Yrl9t5AoQmISqtzq9BsghYbVjKOlZHvMuZdVUsagw/exec → **redirect ไป GitHub Pages อัตโนมัติ** |
 
-ทั้งสองช่องทางใช้งานฟีเจอร์เดียวกัน — ข้อมูลและ API ยังอยู่บน Google Apps Script
+- ลิงก์เดิมยังใช้ได้ — เปิดแล้วพาไปหน้าเร็วทันที
+- เปิด UI บน GAS โดยตรง (สำรอง): เติม `?gas=1` ต่อท้าย URL เดิม
 
 ## สถาปัตยกรรม
 
