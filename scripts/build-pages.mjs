@@ -6,12 +6,21 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
 const srcDir = path.join(root, 'src');
 const docsDir = path.join(root, 'docs');
+const clientDir = path.join(root, 'client');
 const deployConfig = JSON.parse(fs.readFileSync(path.join(root, 'deploy.config.json'), 'utf8'));
 
 const PAGES_BASE = 'https://pongvitsam.github.io/Frontend';
 const GAS_EXEC = deployConfig.productionUrl;
 const GAS_BRIDGE = GAS_EXEC + (GAS_EXEC.includes('?') ? '&' : '?') + 'page=bridge';
-const ASSET_V = deployConfig.assetVersion || '3';
+const ASSET_V = deployConfig.assetVersion || '4';
+
+function readAppClientSource() {
+  const clientPath = path.join(clientDir, 'app.client.js');
+  if (!fs.existsSync(clientPath)) {
+    throw new Error('Missing client/app.client.js');
+  }
+  return fs.readFileSync(clientPath, 'utf8');
+}
 
 function extractStyleCss(stylesHtml) {
   const m = stylesHtml.match(/<style[^>]*>([\s\S]*)<\/style>/i);
@@ -24,15 +33,8 @@ function extractBodyHtml(indexHtml) {
   return bodyMatch[1]
     .replace(/<script[^>]*src=[^>]*><\/script>/gi, '')
     .replace(/<script>[\s\S]*?<\/script>/gi, '')
+    .replace(/<\?!= include\('Client'\); \?>/gi, '')
     .trim();
-}
-
-function loadAppClientJs() {
-  const clientPath = path.join(root, 'client', 'app.client.js');
-  if (!fs.existsSync(clientPath)) {
-    throw new Error('Missing client/app.client.js');
-  }
-  return fs.readFileSync(clientPath, 'utf8').replace(/\bgoogle\.script\.run\b/g, 'gasRun()');
 }
 
 function extractHeadThemeScript(indexHtml) {
@@ -45,11 +47,14 @@ function extractHeadThemeScript(indexHtml) {
 const stylesHtml = fs.readFileSync(path.join(srcDir, 'Styles.html'), 'utf8');
 const indexHtml = fs.readFileSync(path.join(srcDir, 'Index.html'), 'utf8');
 const bodyHtml = extractBodyHtml(indexHtml);
-const appJs = loadAppClientJs();
+const appSource = readAppClientSource();
+const appJs = appSource.replace(/\bgoogle\.script\.run\b/g, 'gasRun()');
+const clientHtml = `<script>\n${appSource.replace(/\bgasRun\(\)/g, 'google.script.run')}\n</script>\n`;
 const themeScript = extractHeadThemeScript(indexHtml);
 
 fs.mkdirSync(docsDir, { recursive: true });
 fs.writeFileSync(path.join(docsDir, 'styles.css'), extractStyleCss(stylesHtml));
+fs.writeFileSync(path.join(srcDir, 'Client.html'), clientHtml);
 
 fs.writeFileSync(
   path.join(docsDir, 'config.js'),
@@ -67,7 +72,6 @@ fs.writeFileSync(
 
 const gasClient = fs.readFileSync(path.join(__dirname, 'gas-client.template.js'), 'utf8');
 fs.writeFileSync(path.join(docsDir, 'gas-client.js'), gasClient);
-
 fs.writeFileSync(path.join(docsDir, 'app.js'), appJs + '\n');
 
 const pagesIndex = `<!DOCTYPE html>
@@ -99,19 +103,17 @@ const gasIndex = `<!DOCTYPE html>
   <meta charset="UTF-8">
   <title>กองบริการธุรกิจจัดการพลังงาน</title>
   ${themeScript}
-  <link rel="stylesheet" href="${PAGES_BASE}/styles.css">
+  <?!= include('Styles'); ?>
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
 <body class="min-h-screen flex flex-col transition-all duration-500">
 ${bodyHtml}
-  <script src="${PAGES_BASE}/config.js?v=${ASSET_V}"></script>
-  <script src="${PAGES_BASE}/gas-client.js?v=${ASSET_V}"></script>
-  <script src="${PAGES_BASE}/app.js?v=${ASSET_V}"></script>
+<?!= include('Client'); ?>
 </body>
 </html>
 `;
 fs.writeFileSync(path.join(srcDir, 'Index.html'), gasIndex);
 
-console.log('Built docs/ and updated src/Index.html for GitHub Pages CDN.');
+console.log('Built docs/, src/Client.html, and src/Index.html');

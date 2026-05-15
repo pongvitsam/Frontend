@@ -1,3 +1,4 @@
+<script>
 let appData = [];
     let isAdmin = false;
     let chartInstance = null;
@@ -130,7 +131,7 @@ let appData = [];
           el.innerHTML = '<p class="text-center text-red-500 px-4">โหลดข้อมูลไม่สำเร็จ โปรดรีเฟรชหน้า</p>';
         }
       }, 25000);
-      gasRun()
+      google.script.run
         .withSuccessHandler(function(data) {
           clearTimeout(loadTimer);
           initApp(data, { fromSession: false });
@@ -217,7 +218,7 @@ let appData = [];
       const isVisible = document.getElementById('edit-banner-visible').checked;
       document.getElementById('banner-modal').classList.add('hidden');
       showLoadingUI(); 
-      gasRun().withSuccessHandler(function() {
+      google.script.run.withSuccessHandler(function() {
         invalidateSessionCache();
         globalBannerText = text;
         globalBannerVisible = isVisible;
@@ -271,7 +272,7 @@ let appData = [];
 
     function openApp(id, name, url, isReady) {
       if (!isReady) return; 
-      gasRun().recordClick(id, name);
+      google.script.run.recordClick(id, name);
       const userEmail = document.getElementById('user-email').innerText;
       let targetUrl = url;
       if (userEmail && userEmail !== "ผู้ใช้งานทั่วไป" && userEmail !== "") {
@@ -343,7 +344,7 @@ let appData = [];
       const user = document.getElementById('username').value;
       const pass = document.getElementById('password').value;
       toggleLoginModal(); showLoadingUI();
-      gasRun().withSuccessHandler(res => {
+      google.script.run.withSuccessHandler(res => {
         if(res) { isAdmin = true; document.getElementById('btn-login').classList.add('hidden'); document.getElementById('btn-logout').classList.remove('hidden'); document.getElementById('btn-admin-panel').classList.remove('hidden'); showAdminPanel(); } 
         else { alert('รหัสผ่านไม่ถูกต้อง'); document.getElementById('loading-state').classList.add('hidden'); document.getElementById('main-content').classList.remove('hidden'); }
       }).verifyLogin(user, pass);
@@ -384,9 +385,9 @@ let appData = [];
       const p = { id: editingAppId, name: n, url: u, status: s, imageUrl: "" };
       
       if (croppedFileData) {
-        gasRun().withSuccessHandler(res => { invalidateSessionCache(); appData = res; editingAppId = null; croppedFileData = null; restoreAdminUI(); loadDashboardData(); }).saveProject(p, croppedFileData);
+        google.script.run.withSuccessHandler(res => { invalidateSessionCache(); appData = res; editingAppId = null; croppedFileData = null; restoreAdminUI(); loadDashboardData(); }).saveProject(p, croppedFileData);
       } else {
-        gasRun().withSuccessHandler(res => { invalidateSessionCache(); appData = res; editingAppId = null; restoreAdminUI(); loadDashboardData(); }).saveProject(p, null);
+        google.script.run.withSuccessHandler(res => { invalidateSessionCache(); appData = res; editingAppId = null; restoreAdminUI(); loadDashboardData(); }).saveProject(p, null);
       }
     }
       async function deleteApp(id) {
@@ -410,7 +411,7 @@ let appData = [];
       }).then((result) => {
         if (result.isConfirmed) {
           showLoadingUI();
-          gasRun().withSuccessHandler(res => {
+          google.script.run.withSuccessHandler(res => {
             invalidateSessionCache();
             appData = res; 
             restoreAdminUI(); 
@@ -437,9 +438,9 @@ let appData = [];
       if(!croppedFileData) return alert('กรุณาเลือกไฟล์และกดยืนยันการตัดรูปภาพก่อนครับ');
       closeUploadModal(); showLoadingUI();
       if(uploadTarget === 'bg') {
-        gasRun().withSuccessHandler(url => { invalidateSessionCache(); if(url) document.body.style.backgroundImage = `url('${url}')`; croppedFileData = null; restoreAdminUI(); }).updateBackgroundImage(croppedFileData);
+        google.script.run.withSuccessHandler(url => { invalidateSessionCache(); if(url) document.body.style.backgroundImage = `url('${url}')`; croppedFileData = null; restoreAdminUI(); }).updateBackgroundImage(croppedFileData);
       } else {
-        gasRun().withSuccessHandler(url => { 
+        google.script.run.withSuccessHandler(url => { 
           invalidateSessionCache();
           if(url) { document.getElementById('site-logo').src = url; document.getElementById('site-logo').classList.remove('hidden'); document.getElementById('default-logo-icon').classList.add('hidden'); } 
           croppedFileData = null; restoreAdminUI(); 
@@ -456,7 +457,7 @@ let appData = [];
         alert('ไม่สามารถโหลดกราฟได้');
         return;
       }
-      gasRun().withSuccessHandler(renderAdminDashboard).getAdminDashboardData();
+      google.script.run.withSuccessHandler(renderAdminDashboard).getAdminDashboardData();
     }
 
     function renderAdminDashboard(data) {
@@ -490,3 +491,5 @@ let appData = [];
         }
       });
     }
+
+</script>

@@ -10,7 +10,7 @@
       document.documentElement.classList.remove('dark');
     }
   </script>
-  <link rel="stylesheet" href="https://pongvitsam.github.io/Frontend/styles.css">
+  <?!= include('Styles'); ?>
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -200,8 +200,6 @@
       </div>
     </div>
   </div>
-  <script src="https://pongvitsam.github.io/Frontend/config.js?v=3"></script>
-  <script src="https://pongvitsam.github.io/Frontend/gas-client.js?v=3"></script>
-  <script src="https://pongvitsam.github.io/Frontend/app.js?v=3"></script>
+<?!= include('Client'); ?>
 </body>
 </html>

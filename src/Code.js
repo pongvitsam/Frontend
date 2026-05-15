@@ -36,11 +36,63 @@ function doGet(e) {
       .setTitle('GAS Bridge')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   }
+  if (params.action) {
+    return handleApiRequest_(params);
+  }
   return HtmlService.createTemplateFromFile('Index')
     .evaluate()
     .setTitle('กองบริการธุรกิจจัดการพลังงาน')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
+}
+
+function handleApiRequest_(params) {
+  var action = params.action;
+  var callback = params.callback;
+  var args = [];
+  if (params.args) {
+    try {
+      args = JSON.parse(params.args);
+    } catch (err) {
+      args = [];
+    }
+  }
+  var payload;
+  try {
+    var data;
+    switch (action) {
+      case 'getInitialData':
+        data = getInitialData();
+        break;
+      case 'getAdminDashboardData':
+        data = getAdminDashboardData();
+        break;
+      case 'verifyLogin':
+        data = verifyLogin(args[0], args[1]);
+        break;
+      case 'recordClick':
+        recordClick(args[0], args[1]);
+        data = true;
+        break;
+      case 'updateBanner':
+        data = updateBanner(args[0], args[1]);
+        break;
+      case 'deleteProject':
+        data = deleteProject(args[0]);
+        break;
+      default:
+        throw new Error('Unknown action: ' + action);
+    }
+    payload = { ok: true, data: data };
+  } catch (err) {
+    payload = { ok: false, error: String(err.message || err) };
+  }
+  var body = JSON.stringify(payload);
+  if (callback) {
+    return ContentService.createTextOutput(callback + '(' + body + ')')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return ContentService.createTextOutput(body).setMimeType(ContentService.MimeType.JSON);
 }
 
 // ---------------- API & Functions ----------------

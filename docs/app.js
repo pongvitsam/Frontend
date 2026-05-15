@@ -123,11 +123,20 @@ let appData = [];
       loadFontAwesomeDeferred();
       loadSarabunDeferred();
       var hadSession = tryHydrateFromSession();
+      var loadTimer = setTimeout(function() {
+        var el = document.getElementById('loading-state');
+        var main = document.getElementById('main-content');
+        if (el && main && main.classList.contains('hidden')) {
+          el.innerHTML = '<p class="text-center text-red-500 px-4">โหลดข้อมูลไม่สำเร็จ โปรดรีเฟรชหน้า</p>';
+        }
+      }, 25000);
       gasRun()
         .withSuccessHandler(function(data) {
+          clearTimeout(loadTimer);
           initApp(data, { fromSession: false });
         })
         .withFailureHandler(function(err) {
+          clearTimeout(loadTimer);
           console.error(err);
           if (!hadSession) {
             var el = document.getElementById('loading-state');
