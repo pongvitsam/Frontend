@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>กองบริการธุรกิจจัดการพลังงาน</title>
+  <?!= include('Styles'); ?>
+  <script>
+    if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  </script>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body class="min-h-screen flex flex-col transition-all duration-500">
+  <div class="bg-overlay"></div>
+
+  <div id="top-banner" class="hidden bg-orange-500 text-white py-2 shadow-md w-full z-50 transition-all duration-300">
+    <div class="marquee-container">
+      <span id="banner-text-display" class="animate-marquee text-sm font-medium cursor-default"></span>
+    </div>
+  </div>
+
+  <nav class="glass-nav sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+      <div class="font-bold text-xl flex items-center gap-3 text-[#524459] dark:text-[#f8f6fb] transition-colors">
+        <div class="relative h-11 w-11 shrink-0 rounded-full bg-[#e6d9f2] dark:bg-[#473b4d] border border-[#d0b3e8] dark:border-[#9b82c3] overflow-hidden shadow-sm transition-colors">
+          <img id="site-logo" src="" alt="Logo" class="absolute inset-0 z-[1] hidden h-full w-full origin-center rounded-full object-cover object-center scale-[1.22]">
+          <i id="default-logo-icon" class="absolute inset-0 z-0 flex items-center justify-center fa-solid fa-solar-panel text-lg text-[#8b7a96] dark:text-[#d0b3e8]"></i>
+        </div>
+        กองบริการธุรกิจจัดการพลังงาน
+      </div>
+      <div class="flex items-center gap-3 sm:gap-4">
+        <button onclick="toggleDarkMode()" class="w-10 h-10 flex items-center justify-center rounded-full bg-[#f8f6fb] dark:bg-[#2d2337] text-[#8b7a96] dark:text-[#d0b3e8] hover:bg-[#ede6f2] dark:hover:bg-[#473b4d] transition shadow-sm border border-[#ede6f2] dark:border-[#473b4d]">
+          <i id="theme-icon" class="fa-solid fa-moon"></i>
+        </button>
+        <span id="user-email" class="text-sm font-light hidden sm:block text-[#8b7a96] dark:text-[#cbbcd6]"></span>
+        <button id="btn-login" onclick="toggleLoginModal()" class="btn-pastel-purple px-5 py-2 rounded-full shadow-sm text-sm tracking-wide">ผู้ดูแลระบบ</button>
+        <button id="btn-logout" onclick="logout()" class="hidden bg-[#d69f9f] hover:bg-[#c48787] text-white px-5 py-2 rounded-full shadow-sm text-sm tracking-wide">ออกจากระบบ</button>
+      </div>
+    </div>
+  </nav>
+
+  <div id="loading-state" class="flex flex-col items-center justify-center py-20 flex-grow">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#b19cd9] dark:border-[#d0b3e8] mb-4"></div>
+    <p class="text-[#8b7a96] dark:text-[#cbbcd6] font-light">กำลังเชื่อมต่อข้อมูล...</p>
+  </div>
+
+  <main id="main-content" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-grow w-full">
+    <div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+      <h1 class="text-3xl font-bold text-[#473b4d] dark:text-white tracking-tight transition-colors">คลังแอปพลิเคชัน</h1>
+      <div class="flex gap-3">
+        <select id="sort-select" onchange="renderApps()" class="border border-[#ede6f2] dark:border-[#473b4d] bg-white dark:bg-[#2d2337] rounded-full px-4 py-2 text-sm text-[#524459] dark:text-[#f8f6fb] outline-none focus:ring-2 focus:ring-[#b19cd9] transition-colors">
+          <option value="popular">เรียงตามความนิยม</option>
+          <option value="az">เรียงตามตัวอักษร (A-Z)</option>
+        </select>
+        <button id="btn-admin-panel" onclick="showAdminPanel()" class="hidden btn-light-purple px-5 py-2 rounded-full shadow-sm text-sm">
+          <i class="fa-solid fa-sliders mr-2"></i> จัดการระบบ
+        </button>
+      </div>
+    </div>
+    <div id="app-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8"></div>
+  </main>
+
+  <section id="admin-dashboard" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-grow w-full">
+    <div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+      <h1 class="text-3xl font-bold text-[#473b4d] dark:text-white transition-colors">แผงควบคุมผู้ดูแลระบบ</h1>
+      <div class="flex flex-wrap gap-2 justify-center">
+        <button onclick="toggleBannerModal()" class="bg-white dark:bg-[#2d2337] border border-[#b19cd9] dark:border-[#9b82c3] text-[#9b82c3] dark:text-[#d0b3e8] hover:bg-[#f8f6fb] dark:hover:bg-[#473b4d] px-4 py-2 rounded-full text-sm transition">
+          <i class="fa-solid fa-bullhorn mr-1"></i> จัดการประกาศ
+        </button>
+        <button onclick="toggleLogoModal()" class="bg-white dark:bg-[#2d2337] border border-[#b19cd9] dark:border-[#9b82c3] text-[#9b82c3] dark:text-[#d0b3e8] hover:bg-[#f8f6fb] dark:hover:bg-[#473b4d] px-4 py-2 rounded-full text-sm transition">
+          <i class="fa-solid fa-stamp mr-1"></i> เปลี่ยนโลโก้
+        </button>
+        <button onclick="toggleBgModal()" class="bg-white dark:bg-[#2d2337] border border-[#b19cd9] dark:border-[#9b82c3] text-[#9b82c3] dark:text-[#d0b3e8] hover:bg-[#f8f6fb] dark:hover:bg-[#473b4d] px-4 py-2 rounded-full text-sm transition">
+          <i class="fa-regular fa-image mr-1"></i> เปลี่ยนพื้นหลัง
+        </button>
+        <button onclick="toggleProjectModal()" class="btn-pastel-purple px-5 py-2 rounded-full shadow-sm text-sm">
+          <i class="fa-solid fa-plus mr-1"></i> เพิ่มโครงการ
+        </button>
+        <button onclick="hideAdminPanel()" class="bg-[#e6d9f2] dark:bg-[#473b4d] text-[#524459] dark:text-[#f8f6fb] hover:bg-[#d0b3e8] dark:hover:bg-[#9b82c3] hover:text-white px-5 py-2 rounded-full text-sm transition">
+          กลับหน้าหลัก
+        </button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div class="lg:col-span-2 glass-card p-8 rounded-3xl h-96 flex flex-col">
+        <h2 class="text-xl font-semibold mb-4 text-[#524459] dark:text-[#f8f6fb]">สถิติการใช้งาน</h2>
+        <div class="flex-grow relative w-full h-full">
+          <canvas id="usageChart"></canvas>
+        </div>
+      </div>
+      <div class="glass-card p-6 rounded-3xl h-96 flex flex-col">
+        <h2 class="text-xl font-semibold mb-4 text-[#524459] dark:text-[#f8f6fb]">ประวัติล่าสุด</h2>
+        <div class="flex-grow overflow-y-auto custom-scrollbar pr-2 h-full">
+          <table class="w-full text-sm text-left">
+            <tbody id="log-table-body" class="divide-y divide-[#ede6f2] dark:divide-[#473b4d]"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="glass-nav py-6 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 text-center text-sm font-light text-[#9b82c3] dark:text-[#a994b5]">
+      © 2025 Pongvit Youngrod Lv.5, Ltd. All rights reserved.
+    </div>
+  </footer>
+
+  <div id="login-modal" class="hidden fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-[#2d2337] p-8 rounded-3xl shadow-2xl w-96 border border-[#ede6f2] dark:border-[#473b4d] transition-colors">
+      <h2 class="text-2xl font-bold mb-6 text-[#473b4d] dark:text-white text-center">เข้าสู่ระบบ</h2>
+      <input type="text" id="username" placeholder="ชื่อผู้ใช้" class="w-full border border-[#ede6f2] dark:border-[#473b4d] text-[#473b4d] dark:text-white rounded-xl p-3 mb-4 bg-[#f8f6fb] dark:bg-[#1a1423] focus:border-[#b19cd9] outline-none">
+      <input type="password" id="password" placeholder="รหัสผ่าน" class="w-full border border-[#ede6f2] dark:border-[#473b4d] text-[#473b4d] dark:text-white rounded-xl p-3 mb-6 bg-[#f8f6fb] dark:bg-[#1a1423] focus:border-[#b19cd9] outline-none">
+      <div class="flex justify-between gap-3">
+        <button onclick="toggleLoginModal()" class="w-full py-3 text-[#8b7a96] dark:text-[#cbbcd6] bg-[#f8f6fb] dark:bg-[#1a1423] rounded-xl hover:bg-[#ede6f2] dark:hover:bg-[#473b4d] transition-colors">ยกเลิก</button>
+        <button onclick="doLogin()" class="w-full py-3 btn-pastel-purple rounded-xl">ยืนยัน</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="project-modal" class="hidden fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-[#2d2337] p-8 rounded-3xl shadow-2xl w-full max-w-md border border-[#ede6f2] dark:border-[#473b4d] transition-colors">
+      <h2 id="modal-title" class="text-2xl font-bold mb-6 text-[#473b4d] dark:text-white">เพิ่มโครงการใหม่</h2>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm text-[#8b7a96] dark:text-[#cbbcd6] mb-1">ชื่อโปรแกรม</label>
+          <input type="text" id="new-name" class="w-full border border-[#ede6f2] dark:border-[#473b4d] text-[#473b4d] dark:text-white rounded-xl p-3 bg-[#f8f6fb] dark:bg-[#1a1423] focus:border-[#b19cd9] outline-none">
+        </div>
+        <div>
+          <label class="block text-sm text-[#8b7a96] dark:text-[#cbbcd6] mb-1">URL ลิ้งก์เข้าใช้งาน</label>
+          <input type="text" id="new-url" class="w-full border border-[#ede6f2] dark:border-[#473b4d] text-[#473b4d] dark:text-white rounded-xl p-3 bg-[#f8f6fb] dark:bg-[#1a1423] focus:border-[#b19cd9] outline-none">
+        </div>
+        <div>
+          <label class="block text-sm text-[#8b7a96] dark:text-[#cbbcd6] mb-1">รูปภาพหน้าปก <span id="crop-status-proj" class="text-green-500 text-xs hidden">(อัปโหลดรูปสำเร็จ)</span></label>
+          <input type="file" id="new-img-file" accept="image/*" class="w-full border border-[#ede6f2] dark:border-[#473b4d] rounded-xl p-2 bg-[#f8f6fb] dark:bg-[#1a1423] text-sm text-[#8b7a96] dark:text-[#cbbcd6] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-[#e6d9f2] dark:file:bg-[#473b4d] file:text-[#524459] dark:file:text-[#f8f6fb]">
+        </div>
+        <div>
+          <label class="block text-sm text-[#8b7a96] dark:text-[#cbbcd6] mb-1">สถานะ</label>
+          <select id="new-status" class="w-full border border-[#ede6f2] dark:border-[#473b4d] text-[#473b4d] dark:text-white rounded-xl p-3 bg-[#f8f6fb] dark:bg-[#1a1423] focus:border-[#b19cd9] outline-none">
+            <option value="พร้อมใช้งาน">พร้อมใช้งาน</option>
+            <option value="กำลังพัฒนา">กำลังพัฒนา</option>
+          </select>
+        </div>
+        <div class="flex justify-end gap-3 mt-8">
+          <button onclick="toggleProjectModal()" class="px-6 py-2.5 text-[#8b7a96] dark:text-[#cbbcd6] bg-[#f8f6fb] dark:bg-[#1a1423] rounded-full hover:bg-[#ede6f2] dark:hover:bg-[#473b4d] transition-colors">ยกเลิก</button>
+          <button onclick="submitProject()" class="px-6 py-2.5 btn-pastel-purple rounded-full shadow-md">บันทึกข้อมูล</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="upload-modal" class="hidden fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-[#2d2337] p-8 rounded-3xl shadow-2xl w-full max-w-sm border border-[#ede6f2] dark:border-[#473b4d] text-center transition-colors">
+      <h2 id="upload-title" class="text-2xl font-bold mb-2 text-[#473b4d] dark:text-white">อัปโหลดรูปภาพ</h2>
+      <p class="text-sm text-[#8b7a96] dark:text-[#cbbcd6] mb-6">เลือกไฟล์จากอุปกรณ์ของคุณ</p>
+      <input type="file" id="upload-file" accept="image/*" class="w-full mb-2 border border-[#ede6f2] dark:border-[#473b4d] rounded-xl p-2 bg-[#f8f6fb] dark:bg-[#1a1423] text-sm text-[#8b7a96] dark:text-[#cbbcd6] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-[#e6d9f2] dark:file:bg-[#473b4d] file:text-[#524459] dark:file:text-[#f8f6fb]">
+      <p id="crop-status-upload" class="text-green-500 text-xs mb-4 hidden">ตัดรูปภาพพร้อมอัปโหลดแล้ว!</p>
+      
+      <div class="flex justify-center gap-3">
+        <button onclick="closeUploadModal()" class="px-6 py-2.5 text-[#8b7a96] dark:text-[#cbbcd6] bg-[#f8f6fb] dark:bg-[#1a1423] rounded-full hover:bg-[#ede6f2] dark:hover:bg-[#473b4d] transition-colors">ยกเลิก</button>
+        <button id="btn-submit-upload" class="px-6 py-2.5 btn-pastel-purple rounded-full shadow-md">อัปโหลด</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="banner-modal" class="hidden fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-[#2d2337] p-8 rounded-3xl shadow-2xl w-full max-w-md border border-[#ede6f2] dark:border-[#473b4d] transition-colors">
+      <h2 class="text-2xl font-bold mb-6 text-[#473b4d] dark:text-white">จัดการประกาศ (Banner)</h2>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm text-[#8b7a96] dark:text-[#cbbcd6] mb-1">ข้อความประกาศ</label>
+          <textarea id="edit-banner-text" rows="3" placeholder="พิมพ์ข้อความที่ต้องการแจ้งให้ผู้ใช้งานทราบ..." class="w-full border border-[#ede6f2] dark:border-[#473b4d] text-[#473b4d] dark:text-white rounded-xl p-3 bg-[#f8f6fb] dark:bg-[#1a1423] focus:border-[#b19cd9] outline-none resize-none"></textarea>
+        </div>
+        <div class="flex items-center gap-2 mt-2">
+          <input type="checkbox" id="edit-banner-visible" class="w-5 h-5 accent-[#b19cd9] cursor-pointer">
+          <label for="edit-banner-visible" class="text-sm font-medium text-[#473b4d] dark:text-[#f8f6fb] cursor-pointer">เปิดแสดงประกาศหน้าเว็บไซต์</label>
+        </div>
+        <div class="flex justify-end gap-3 mt-8">
+          <button onclick="toggleBannerModal()" class="px-6 py-2.5 text-[#8b7a96] dark:text-[#cbbcd6] bg-[#f8f6fb] dark:bg-[#1a1423] rounded-full hover:bg-[#ede6f2] dark:hover:bg-[#473b4d] transition-colors">ยกเลิก</button>
+          <button onclick="saveBanner()" class="px-6 py-2.5 btn-pastel-purple rounded-full shadow-md">บันทึกข้อมูล</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="cropper-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[60] p-4">
+    <div class="bg-white dark:bg-[#2d2337] p-6 rounded-3xl shadow-2xl w-full max-w-3xl flex flex-col items-center transition-colors">
+      <h2 class="text-xl font-bold mb-4 text-[#473b4d] dark:text-white">จัดตำแหน่งและตัดรูปภาพ</h2>
+      <div class="w-full h-[50vh] bg-gray-100 dark:bg-[#1a1423] rounded-xl overflow-hidden mb-6 relative">
+        <img id="cropper-image" class="max-w-full block" src="">
+      </div>
+      <div class="flex gap-3 w-full justify-center">
+        <button onclick="cancelCrop()" class="px-8 py-3 text-[#8b7a96] dark:text-[#cbbcd6] bg-[#f8f6fb] dark:bg-[#1a1423] rounded-full hover:bg-[#ede6f2] dark:hover:bg-[#473b4d] font-semibold transition-colors">ยกเลิก</button>
+        <button onclick="confirmCrop()" class="px-8 py-3 btn-pastel-purple rounded-full shadow-lg font-semibold"><i class="fa-solid fa-crop-simple mr-2"></i>ยืนยันรูปนี้</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    let appData = [];
+    let isAdmin = false;
+    let chartInstance = null;
+    let editingAppId = null; 
+    let uploadTarget = ''; 
+
+    let globalBannerText = '';
+    let globalBannerVisible = false;
+
+    let cropper = null;
+    let croppedFileData = null; 
+
+    function loadScriptOnce(src) {
+      return new Promise((resolve, reject) => {
+        const existing = document.querySelector(`script[data-src="${src}"]`);
+        if (existing) {
+          if (existing.dataset.loaded === '1') return resolve();
+          existing.addEventListener('load', () => resolve(), { once: true });
+          existing.addEventListener('error', () => reject(new Error('โหลดสคริปต์ไม่สำเร็จ')), { once: true });
+          return;
+        }
+        const s = document.createElement('script');
+        s.src = src;
+        s.defer = true;
+        s.dataset.src = src;
+        s.addEventListener('load', () => {
+          s.dataset.loaded = '1';
+          resolve();
+        }, { once: true });
+        s.addEventListener('error', () => reject(new Error('โหลดสคริปต์ไม่สำเร็จ')), { once: true });
+        document.head.appendChild(s);
+      });
+    }
+
+    function ensureCropperCss() {
+      return new Promise(function(resolve, reject) {
+        if (document.querySelector('link[data-cropper-css]')) return resolve();
+        var l = document.createElement('link');
+        l.rel = 'stylesheet';
+        l.href = 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css';
+        l.dataset.cropperCss = '1';
+        l.onload = function() { resolve(); };
+        l.onerror = function() { reject(new Error('cropper css')); };
+        document.head.appendChild(l);
+      });
+    }
+
+    function ensureSwalReady() {
+      if (typeof window.Swal !== 'undefined') return Promise.resolve();
+      return loadScriptOnce('https://cdn.jsdelivr.net/npm/sweetalert2@11');
+    }
+
+    function loadFontAwesomeDeferred() {
+      var link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'style';
+      link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css';
+      link.crossOrigin = 'anonymous';
+      link.onload = function() { link.onload = null; link.rel = 'stylesheet'; };
+      document.head.appendChild(link);
+    }
+
+    function loadSarabunDeferred() {
+      var link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&display=swap';
+      link.media = 'print';
+      link.onload = function() { link.media = 'all'; };
+      document.head.appendChild(link);
+    }
+
+    var SESSION_CACHE_KEY = 'pk2_initial_v4';
+    var SESSION_CACHE_MS = 8 * 60 * 1000;
+
+    function invalidateSessionCache() {
+      try { sessionStorage.removeItem(SESSION_CACHE_KEY); } catch (e) {}
+    }
+
+    function thumbUrl(url) {
+      var fallback = 'https://via.placeholder.com/400x200.png?text=No+Image';
+      if (!url) return fallback;
+      if (/drive\.google\.com\/thumbnail/i.test(url)) {
+        return url.replace(/sz=w\d+/i, 'sz=w400');
+      }
+      return url;
+    }
+
+    function tryHydrateFromSession() {
+      try {
+        var raw = sessionStorage.getItem(SESSION_CACHE_KEY);
+        if (!raw) return false;
+        var o = JSON.parse(raw);
+        if (Date.now() - o.t > SESSION_CACHE_MS) return false;
+        if (!o.data || !Array.isArray(o.data.apps)) return false;
+        initApp(o.data, { fromSession: true });
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function syncThemeIcon() {
+      var icon = document.getElementById('theme-icon');
+      if (!icon) return;
+      if (document.documentElement.classList.contains('dark')) {
+        icon.classList.replace('fa-moon', 'fa-sun');
+      }
+    }
+
+    async function ensureChartReady() {
+      if (typeof window.Chart !== 'undefined') return;
+      await loadScriptOnce('https://cdn.jsdelivr.net/npm/chart.js');
+    }
+
+    async function ensureCropperReady() {
+      if (typeof window.Cropper !== 'undefined') return;
+      await ensureCropperCss();
+      await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      syncThemeIcon();
+      loadFontAwesomeDeferred();
+      loadSarabunDeferred();
+      var hadSession = tryHydrateFromSession();
+      google.script.run
+        .withSuccessHandler(function(data) {
+          initApp(data, { fromSession: false });
+        })
+        .withFailureHandler(function(err) {
+          console.error(err);
+          if (!hadSession) {
+            var el = document.getElementById('loading-state');
+            if (el) el.innerHTML = '<p class="text-center text-red-500 px-4">โหลดข้อมูลไม่สำเร็จ โปรดรีเฟรชหน้า</p>';
+          }
+        })
+        .getInitialData();
+    });
+
+    // ฟังก์ชันสลับโหมด มืด/สว่าง
+    function toggleDarkMode() {
+      const htmlClass = document.documentElement.classList;
+      const icon = document.getElementById('theme-icon');
+      
+      if (htmlClass.contains('dark')) {
+        htmlClass.remove('dark');
+        localStorage.theme = 'light';
+        icon.classList.replace('fa-sun', 'fa-moon');
+      } else {
+        htmlClass.add('dark');
+        localStorage.theme = 'dark';
+        icon.classList.replace('fa-moon', 'fa-sun');
+      }
+      // โหลดกราฟใหม่เพื่อให้สีตัวหนังสือเข้ากับธีม
+      if (chartInstance && isAdmin) loadDashboardData();
+    }
+
+    function initApp(data, opts) {
+      opts = opts || {};
+      document.getElementById('user-email').innerText = data.email;
+      appData = data.apps;
+
+      globalBannerText = data.bannerText || '';
+      globalBannerVisible = (data.bannerVisible === true || data.bannerVisible === 'true');
+      renderBanner();
+
+      if (data.bgImage) document.body.style.backgroundImage = 'url(\'' + data.bgImage + '\')';
+      if (data.logoImage) {
+        document.getElementById('site-logo').src = data.logoImage;
+        document.getElementById('site-logo').classList.remove('hidden');
+        document.getElementById('default-logo-icon').classList.add('hidden');
+      }
+
+      document.getElementById('loading-state').classList.add('hidden');
+      document.getElementById('main-content').classList.remove('hidden');
+      renderApps();
+
+      if (!opts.fromSession) {
+        try {
+          sessionStorage.setItem(SESSION_CACHE_KEY, JSON.stringify({ t: Date.now(), data: data }));
+        } catch (e) {}
+      }
+    }
+
+    function renderBanner() {
+      const banner = document.getElementById('top-banner');
+      const textDisplay = document.getElementById('banner-text-display');
+      
+      if (globalBannerVisible && globalBannerText.trim() !== '') {
+        textDisplay.innerHTML = globalBannerText.replace(/\n/g, ' &nbsp;&nbsp;&nbsp; ');
+        banner.classList.remove('hidden');
+      } else {
+        banner.classList.add('hidden');
+      }
+    }
+
+    function toggleBannerModal() {
+      const modal = document.getElementById('banner-modal');
+      if (modal.classList.contains('hidden')) {
+        document.getElementById('edit-banner-text').value = globalBannerText;
+        document.getElementById('edit-banner-visible').checked = globalBannerVisible;
+      }
+      modal.classList.toggle('hidden');
+    }
+
+    function saveBanner() {
+      const text = document.getElementById('edit-banner-text').value;
+      const isVisible = document.getElementById('edit-banner-visible').checked;
+      document.getElementById('banner-modal').classList.add('hidden');
+      showLoadingUI(); 
+      google.script.run.withSuccessHandler(function() {
+        invalidateSessionCache();
+        globalBannerText = text;
+        globalBannerVisible = isVisible;
+        renderBanner(); 
+        restoreAdminUI();
+      }).updateBanner(text, isVisible);
+    }
+
+    function renderApps() {
+      const grid = document.getElementById('app-grid');
+      grid.innerHTML = '';
+      const sortType = document.getElementById('sort-select').value;
+      let sortedApps = [...appData];
+      
+      if(sortType === 'popular') sortedApps.sort((a, b) => b.clicks - a.clicks);
+      else sortedApps.sort((a, b) => a.name.localeCompare(b.name));
+
+      sortedApps.forEach(app => {
+        const isReady = app.status === 'พร้อมใช้งาน';
+        const cardClass = isReady ? 'glass-card hover:-translate-y-1 transition-transform cursor-pointer' : 'glass-card grayscale-card';
+        const badgeClass = isReady ? 'bg-[#f0e6f5] dark:bg-[#473b4d] text-[#9b82c3] dark:text-[#d0b3e8]' : 'bg-[#f2f2f2] dark:bg-[#332b3d] text-[#8b7a96] dark:text-[#a994b5]';
+        const imgUrl = thumbUrl(app.imageUrl);
+
+        const adminControls = isAdmin 
+          ? `<div class="flex items-center gap-3">
+               <span class="text-xs text-[#a994b5] dark:text-[#cbbcd6] bg-[#f8f6fb] dark:bg-[#1a1423] px-2 py-1 rounded-md transition-colors"><i class="fa-solid fa-chart-simple mr-1"></i> ${app.clicks}</span>
+               <button onclick="event.stopPropagation(); editApp('${app.id}')" class="text-[#b19cd9] hover:text-[#9b82c3] transition" title="แก้ไข"><i class="fa-solid fa-pen-to-square text-lg"></i></button>
+               <button onclick="event.stopPropagation(); deleteApp('${app.id}')" class="text-[#d69f9f] hover:text-[#c48787] transition" title="ลบ"><i class="fa-solid fa-trash text-lg"></i></button>
+             </div>` : ``;
+
+        grid.innerHTML += `
+          <div class="rounded-3xl overflow-hidden flex flex-col ${cardClass}" onclick="openApp('${app.id}', '${app.name}', '${app.url}', ${isReady})">
+            <div class="h-40 w-full overflow-hidden border-b border-[#ede6f2] dark:border-[#473b4d] transition-colors bg-[#ede6f2] dark:bg-[#332b3d]">
+              <img src="${imgUrl}" alt="" class="h-40 w-full object-cover" width="400" height="160" loading="lazy" decoding="async" fetchpriority="low" />
+            </div>
+            <div class="p-6 flex-grow flex flex-col justify-between">
+              <div>
+                <h3 class="font-bold text-lg mb-2 text-[#473b4d] dark:text-[#f8f6fb] break-words transition-colors">${app.name}</h3>
+                <span class="text-xs font-medium px-3 py-1 rounded-full ${badgeClass} transition-colors">${app.status}</span>
+              </div>
+              <div class="mt-5 flex justify-between items-end">
+                <div class="w-8 h-8 rounded-full bg-[#f8f6fb] dark:bg-[#1a1423] flex items-center justify-center text-[#b19cd9] shadow-inner transition-colors">
+                  <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                </div>
+                ${adminControls}
+              </div>
+            </div>
+          </div>`;
+      });
+    }
+
+    function openApp(id, name, url, isReady) {
+      if (!isReady) return; 
+      google.script.run.recordClick(id, name);
+      const userEmail = document.getElementById('user-email').innerText;
+      let targetUrl = url;
+      if (userEmail && userEmail !== "ผู้ใช้งานทั่วไป" && userEmail !== "") {
+        const separator = url.indexOf('?') !== -1 ? '&' : '?';
+        targetUrl = url + separator + 'user_email=' + encodeURIComponent(userEmail);
+      }
+      window.open(targetUrl, '_blank');
+      const appIndex = appData.findIndex(a => a.id == id);
+      if(appIndex > -1) { appData[appIndex].clicks++; if(isAdmin) renderApps(); }
+    }
+
+    // --- ระบบตัดรูปภาพ (Cropper) ---
+    async function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      try {
+        await ensureCropperReady();
+      } catch (err) {
+        alert('ไม่สามารถโหลดเครื่องมือตัดรูปภาพได้');
+        event.target.value = '';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        document.getElementById('cropper-image').src = e.target.result;
+        document.getElementById('cropper-modal').classList.remove('hidden');
+        let aspectRatio = NaN; 
+        if (event.target.id === 'new-img-file') aspectRatio = 16 / 9; 
+        if (event.target.id === 'upload-file' && uploadTarget === 'logo') aspectRatio = 1 / 1; 
+        if (event.target.id === 'upload-file' && uploadTarget === 'bg') aspectRatio = 16 / 9; 
+        if (cropper) cropper.destroy();
+        cropper = new Cropper(document.getElementById('cropper-image'), { aspectRatio: aspectRatio, viewMode: 1, autoCropArea: 1 });
+      };
+      reader.readAsDataURL(file);
+    }
+
+    document.getElementById('new-img-file').addEventListener('change', handleFileSelect);
+    document.getElementById('upload-file').addEventListener('change', handleFileSelect);
+
+    function cancelCrop() {
+      document.getElementById('cropper-modal').classList.add('hidden');
+      if (cropper) cropper.destroy();
+      document.getElementById('new-img-file').value = '';
+      document.getElementById('upload-file').value = '';
+      croppedFileData = null;
+      document.getElementById('crop-status-proj').classList.add('hidden');
+      document.getElementById('crop-status-upload').classList.add('hidden');
+    }
+
+    function confirmCrop() {
+      if (!cropper) return;
+      const canvas = cropper.getCroppedCanvas({ maxWidth: 1200, maxHeight: 1200 });
+      const fileInput = document.getElementById('new-img-file').files.length > 0 ? document.getElementById('new-img-file') : document.getElementById('upload-file');
+      const originalFile = fileInput.files[0];
+      const base64Url = canvas.toDataURL(originalFile.type);
+      croppedFileData = { data: base64Url.split(',')[1], mimeType: originalFile.type, name: originalFile.name };
+      document.getElementById('cropper-modal').classList.add('hidden');
+      if (cropper) cropper.destroy();
+      if(document.getElementById('new-img-file').files.length > 0) {
+        document.getElementById('crop-status-proj').classList.remove('hidden');
+      } else {
+        document.getElementById('crop-status-upload').classList.remove('hidden');
+      }
+    }
+
+    // --- ระบบ Admin ปกติ ---
+    function toggleLoginModal() { document.getElementById('login-modal').classList.toggle('hidden'); }
+    function doLogin() {
+      const user = document.getElementById('username').value;
+      const pass = document.getElementById('password').value;
+      toggleLoginModal(); showLoadingUI();
+      google.script.run.withSuccessHandler(res => {
+        if(res) { isAdmin = true; document.getElementById('btn-login').classList.add('hidden'); document.getElementById('btn-logout').classList.remove('hidden'); document.getElementById('btn-admin-panel').classList.remove('hidden'); showAdminPanel(); } 
+        else { alert('รหัสผ่านไม่ถูกต้อง'); document.getElementById('loading-state').classList.add('hidden'); document.getElementById('main-content').classList.remove('hidden'); }
+      }).verifyLogin(user, pass);
+    }
+    function logout() { isAdmin = false; document.getElementById('btn-login').classList.remove('hidden'); document.getElementById('btn-logout').classList.add('hidden'); document.getElementById('btn-admin-panel').classList.add('hidden'); hideAdminPanel(); }
+    
+    function showAdminPanel() { document.getElementById('main-content').classList.add('hidden'); document.getElementById('admin-dashboard').classList.remove('hidden'); document.getElementById('loading-state').classList.add('hidden'); loadDashboardData(); renderApps(); }
+    function hideAdminPanel() { document.getElementById('admin-dashboard').classList.add('hidden'); document.getElementById('main-content').classList.remove('hidden'); renderApps(); }
+
+    function toggleProjectModal() {
+      const m = document.getElementById('project-modal');
+      if(m.classList.contains('hidden') && !editingAppId) {
+        document.getElementById('modal-title').innerText = 'เพิ่มโครงการใหม่';
+        document.getElementById('new-name').value = ''; document.getElementById('new-url').value = ''; document.getElementById('new-img-file').value = '';
+      }
+      if(!m.classList.contains('hidden')) { editingAppId = null; croppedFileData = null; document.getElementById('crop-status-proj').classList.add('hidden'); }
+      m.classList.toggle('hidden');
+    }
+
+    function editApp(id) {
+      const app = appData.find(a => a.id == id);
+      if(!app) return;
+      editingAppId = app.id;
+      document.getElementById('modal-title').innerText = 'แก้ไขโครงการ';
+      document.getElementById('new-name').value = app.name;
+      document.getElementById('new-url').value = app.url;
+      document.getElementById('new-status').value = app.status;
+      document.getElementById('new-img-file').value = '';
+      croppedFileData = null;
+      document.getElementById('crop-status-proj').classList.add('hidden');
+      document.getElementById('project-modal').classList.remove('hidden');
+    }
+
+    function submitProject() {
+      const n = document.getElementById('new-name').value, u = document.getElementById('new-url').value, s = document.getElementById('new-status').value;
+      if(!n || !u) return alert('กรอกชื่อและ URL');
+      document.getElementById('project-modal').classList.add('hidden'); showLoadingUI();
+      const p = { id: editingAppId, name: n, url: u, status: s, imageUrl: "" };
+      
+      if (croppedFileData) {
+        google.script.run.withSuccessHandler(res => { invalidateSessionCache(); appData = res; editingAppId = null; croppedFileData = null; restoreAdminUI(); loadDashboardData(); }).saveProject(p, croppedFileData);
+      } else {
+        google.script.run.withSuccessHandler(res => { invalidateSessionCache(); appData = res; editingAppId = null; restoreAdminUI(); loadDashboardData(); }).saveProject(p, null);
+      }
+    }
+      async function deleteApp(id) {
+      try {
+        await ensureSwalReady();
+      } catch (e) {
+        alert('โหลดกล่องโต้ตอบไม่สำเร็จ');
+        return;
+      }
+      Swal.fire({
+        title: 'คุณแน่ใจหรือไม่?',
+        text: "ข้อมูลโปรเจกต์นี้จะไม่สามารถกู้คืนได้!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d69f9f',
+        cancelButtonColor: '#b19cd9',
+        confirmButtonText: '<i class="fa-solid fa-trash mr-2"></i>ใช่, ลบเลย!',
+        cancelButtonText: 'ยกเลิก',
+        background: document.documentElement.classList.contains('dark') ? '#2d2337' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#f8f6fb' : '#473b4d'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          showLoadingUI();
+          google.script.run.withSuccessHandler(res => {
+            invalidateSessionCache();
+            appData = res; 
+            restoreAdminUI(); 
+            loadDashboardData(); 
+            
+            Swal.fire({
+              title: 'ลบสำเร็จ!',
+              text: 'โปรเจกต์ถูกลบออกจากระบบแล้ว',
+              icon: 'success',
+              confirmButtonColor: '#b19cd9',
+              background: document.documentElement.classList.contains('dark') ? '#2d2337' : '#ffffff',
+              color: document.documentElement.classList.contains('dark') ? '#f8f6fb' : '#473b4d'
+            });
+            
+          }).deleteProject(id);
+        }
+      });
+    }
+    function toggleBgModal() { uploadTarget = 'bg'; document.getElementById('upload-title').innerText = 'เปลี่ยนรูปพื้นหลัง'; document.getElementById('upload-modal').classList.remove('hidden'); document.getElementById('upload-file').value=''; croppedFileData = null; document.getElementById('crop-status-upload').classList.add('hidden'); }
+    function toggleLogoModal() { uploadTarget = 'logo'; document.getElementById('upload-title').innerText = 'เปลี่ยนโลโก้'; document.getElementById('upload-modal').classList.remove('hidden'); document.getElementById('upload-file').value=''; croppedFileData = null; document.getElementById('crop-status-upload').classList.add('hidden'); }
+    function closeUploadModal() { document.getElementById('upload-modal').classList.add('hidden'); croppedFileData = null; }
+
+    document.getElementById('btn-submit-upload').onclick = function() {
+      if(!croppedFileData) return alert('กรุณาเลือกไฟล์และกดยืนยันการตัดรูปภาพก่อนครับ');
+      closeUploadModal(); showLoadingUI();
+      if(uploadTarget === 'bg') {
+        google.script.run.withSuccessHandler(url => { invalidateSessionCache(); if(url) document.body.style.backgroundImage = `url('${url}')`; croppedFileData = null; restoreAdminUI(); }).updateBackgroundImage(croppedFileData);
+      } else {
+        google.script.run.withSuccessHandler(url => { 
+          invalidateSessionCache();
+          if(url) { document.getElementById('site-logo').src = url; document.getElementById('site-logo').classList.remove('hidden'); document.getElementById('default-logo-icon').classList.add('hidden'); } 
+          croppedFileData = null; restoreAdminUI(); 
+        }).updateLogoImage(croppedFileData);
+      }
+    };
+
+    function showLoadingUI() { document.getElementById('loading-state').classList.remove('hidden'); document.getElementById('admin-dashboard').classList.add('hidden'); document.getElementById('main-content').classList.add('hidden'); }
+    function restoreAdminUI() { document.getElementById('loading-state').classList.add('hidden'); if(isAdmin) document.getElementById('admin-dashboard').classList.remove('hidden'); else document.getElementById('main-content').classList.remove('hidden'); renderApps(); }
+    async function loadDashboardData() {
+      try {
+        await ensureChartReady();
+      } catch (err) {
+        alert('ไม่สามารถโหลดกราฟได้');
+        return;
+      }
+      google.script.run.withSuccessHandler(renderAdminDashboard).getAdminDashboardData();
+    }
+
+    function renderAdminDashboard(data) {
+      const tbody = document.getElementById('log-table-body');
+      tbody.innerHTML = data.logs.map(log => `
+        <tr class="hover:bg-[#f8f6fb] dark:hover:bg-[#3b2d47] transition border-b border-[#ede6f2] dark:border-[#473b4d] last:border-0">
+          <td class="py-3 pl-2 whitespace-nowrap text-[#a994b5] dark:text-[#cbbcd6] text-xs transition-colors">${log.time}</td>
+          <td class="py-3 pr-2">
+            <div class="font-medium text-[#524459] dark:text-[#f8f6fb] transition-colors">${log.appName}</div>
+            <div class="text-[11px] text-[#8b7a96] dark:text-[#cbbcd6] bg-[#f8f6fb] dark:bg-[#1a1423] inline-block px-2 py-0.5 rounded mt-1 transition-colors">${log.email}</div>
+          </td>
+        </tr>`).join('');
+
+      const ctx = document.getElementById('usageChart').getContext('2d');
+      if(chartInstance) chartInstance.destroy();
+      
+      const isDark = document.documentElement.classList.contains('dark');
+      const gridColor = isDark ? '#473b4d' : '#ede6f2';
+      const tickColor = isDark ? '#cbbcd6' : '#8b7a96';
+
+      chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: appData.map(a => a.name), datasets: [{ label: 'ยอดใช้งาน', data: appData.map(a => a.clicks), backgroundColor: '#b19cd9', borderRadius: 6, maxBarThickness: 40 }] },
+        options: { 
+          responsive: true, maintainAspectRatio: false, 
+          plugins: { legend: { display: false } }, 
+          scales: { 
+            y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor } }, 
+            x: { grid: { display: false }, ticks: { color: tickColor } } 
+          } 
+        }
+      });
+    }
+  </script>
+</body>
+</html>

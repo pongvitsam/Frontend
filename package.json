@@ -1,0 +1,15 @@
+{
+  "name": "frontend-gas",
+  "version": "1.0.0",
+  "private": true,
+  "description": "กองบริการธุรกิจจัดการพลังงาน — Google Apps Script Web App",
+  "scripts": {
+    "pull": "clasp pull",
+    "push": "clasp push",
+    "deploy": "clasp push && clasp deploy -i AKfycby8V8L2CRZINAgkEcqfwjduA8w_7Yrl9t5AoQmISqtzq9BsghYbVjKOlZHvMuZdVUsagw -d \"Production\"",
+    "deployments": "clasp deployments"
+  },
+  "devDependencies": {
+    "@google/clasp": "^3.3.0"
+  }
+}
