@@ -11,6 +11,7 @@ const deployConfig = JSON.parse(fs.readFileSync(path.join(root, 'deploy.config.j
 const PAGES_BASE = 'https://pongvitsam.github.io/Frontend';
 const GAS_EXEC = deployConfig.productionUrl;
 const GAS_BRIDGE = GAS_EXEC + (GAS_EXEC.includes('?') ? '&' : '?') + 'page=bridge';
+const ASSET_V = deployConfig.assetVersion || '3';
 
 function extractStyleCss(stylesHtml) {
   const m = stylesHtml.match(/<style[^>]*>([\s\S]*)<\/style>/i);
@@ -83,10 +84,10 @@ const pagesIndex = `<!DOCTYPE html>
 </head>
 <body class="min-h-screen flex flex-col transition-all duration-500">
 ${bodyHtml}
-  <script src="config.js"></script>
-  <script src="gas-client.js"></script>
+  <script src="config.js?v=${ASSET_V}"></script>
+  <script src="gas-client.js?v=${ASSET_V}"></script>
   <iframe id="gas-bridge-frame" src="${GAS_BRIDGE}" style="position:absolute;width:0;height:0;border:0;visibility:hidden" title="GAS Bridge"></iframe>
-  <script src="app.js"></script>
+  <script src="app.js?v=${ASSET_V}"></script>
 </body>
 </html>
 `;
@@ -105,9 +106,9 @@ const gasIndex = `<!DOCTYPE html>
 </head>
 <body class="min-h-screen flex flex-col transition-all duration-500">
 ${bodyHtml}
-  <script src="${PAGES_BASE}/config.js"></script>
-  <script src="${PAGES_BASE}/gas-client.js"></script>
-  <script src="${PAGES_BASE}/app.js"></script>
+  <script src="${PAGES_BASE}/config.js?v=${ASSET_V}"></script>
+  <script src="${PAGES_BASE}/gas-client.js?v=${ASSET_V}"></script>
+  <script src="${PAGES_BASE}/app.js?v=${ASSET_V}"></script>
 </body>
 </html>
 `;

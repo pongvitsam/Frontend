@@ -108,19 +108,18 @@
 
   function createBridgeProxy() {
     var handlers = { success: null, failure: null };
-    var api = {};
-
-    api.withSuccessHandler = function (fn) {
-      handlers.success = fn;
-      return api;
+    var p;
+    var base = {
+      withSuccessHandler: function (fn) {
+        handlers.success = fn;
+        return p;
+      },
+      withFailureHandler: function (fn) {
+        handlers.failure = fn;
+        return p;
+      },
     };
-
-    api.withFailureHandler = function (fn) {
-      handlers.failure = fn;
-      return api;
-    };
-
-    return new Proxy(api, {
+    p = new Proxy(base, {
       get: function (target, prop) {
         if (Object.prototype.hasOwnProperty.call(target, prop)) {
           return target[prop];
@@ -129,12 +128,13 @@
           return function () {
             var args = Array.prototype.slice.call(arguments);
             callBridge(prop, args, handlers.success, handlers.failure);
-            return api;
+            return p;
           };
         }
         return undefined;
       },
     });
+    return p;
   }
 
   global.gasRun = function () {
