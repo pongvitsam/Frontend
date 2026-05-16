@@ -23,6 +23,41 @@ html.dark{color-scheme:dark}
 select:not([type=checkbox]){color:#2c3542}
 .dark select,.dark input:not([type=file]):not([type=checkbox]),.dark textarea{background-color:#1a2029;color:#f5f3ee;border-color:#2d3544}
 .dark select option{background-color:#1a2029;color:#f5f3ee}
+.btn-admin-outline{background:#fff;color:#6f5c44;border:1px solid #8b7355;transition:background .2s,color .2s,border-color .2s}
+.btn-admin-outline:hover{background:#f5f3ee;color:#2c3548}
+.dark .btn-admin-outline{background:#2a3340;color:#e8dcc8;border-color:#8b7355}
+.dark .btn-admin-outline:hover{background:#35414f;color:#fff}
+.btn-admin-back{background:#ebe6dc;color:#2c3542;transition:background .2s,color .2s}
+.btn-admin-back:hover{background:#c9b896;color:#fff}
+.dark .btn-admin-back{background:#2a3340;color:#f5f3ee}
+.dark .btn-admin-back:hover{background:#8b7355;color:#fff}
+.admin-page-title{color:#1f2933}
+.dark .admin-page-title{color:#f5f3ee}
+.glass-card .lux-section-title{color:#2c3542}
+.dark .glass-card .lux-section-title{color:#f5f3ee}
+.lux-modal-panel{background:#fff;color:#1f2933;border:1px solid #e3ddd2;border-radius:2rem}
+.dark .lux-modal-panel{background:#1a2029;color:#f5f3ee;border-color:#2d3544}
+.lux-modal-title{color:#1f2933}
+.dark .lux-modal-title{color:#f5f3ee}
+.lux-field-label{display:block;font-size:.875rem;color:#4f5d6b;margin-bottom:.25rem}
+.dark .lux-field-label{color:#c5cdd6}
+.lux-field-hint{font-size:.875rem;color:#4f5d6b}
+.dark .lux-field-hint{color:#b8c0c8}
+.lux-field-input,.lux-field-file,textarea.lux-field-input{width:100%;border:1px solid #e3ddd2;background:#f5f3ee;color:#1f2933}
+.lux-field-input::placeholder,textarea.lux-field-input::placeholder{color:#6b7885;opacity:1}
+.dark .lux-field-input,.dark .lux-field-file,.dark textarea.lux-field-input{background:#121820;border-color:#2d3544;color:#f5f3ee}
+.dark .lux-field-input::placeholder,.dark textarea.lux-field-input::placeholder{color:#8a96a3}
+.lux-field-file::file-selector-button{margin-right:1rem;padding:.5rem 1rem;border:0;border-radius:9999px;background:#ebe6dc;color:#2c3542;cursor:pointer}
+.dark .lux-field-file::file-selector-button{background:#2a3340;color:#f5f3ee}
+.lux-btn-ghost{color:#4f5d6b;background:#f5f3ee;transition:background .2s,color .2s}
+.lux-btn-ghost:hover{background:#e3ddd2;color:#2c3548}
+.dark .lux-btn-ghost{color:#d4dbe3;background:#2a3340}
+.dark .lux-btn-ghost:hover{background:#35414f;color:#fff}
+.lux-check-label{color:#1f2933;cursor:pointer}
+.dark .lux-check-label{color:#f5f3ee}
+.dark #log-table-body{color:#d4dbe3}
+.dark #log-table-body td{color:#d4dbe3}
+.dark .cropper-stage{background:#121820}
 .lux-select-btn{display:inline-flex;align-items:center;border:1px solid #e3ddd2;background:#fff;color:#2c3542;border-radius:9999px;padding:.5rem 1.125rem;font-size:.875rem;cursor:pointer;transition:background .2s,border-color .2s,color .2s,box-shadow .2s}
 .dark .lux-select-btn{background:#1a2029;color:#f5f3ee;border-color:#2d3544}
 .sort-menu{background:#fff;border:1px solid #e3ddd2;border-radius:1.25rem;overflow:hidden;box-shadow:0 12px 32px -8px rgba(31,41,51,.15)}
