@@ -508,7 +508,7 @@ let appData = [];
           <div class="lux-app-card ${cardClass}" onclick="openApp('${app.id}', '${app.name}', '${app.url}', ${isReady})">
             <article class="app-card-shell">
               <div class="app-card-visual">
-                <img class="app-card-thumb" src="${imgUrl}" alt="" width="84" height="84" loading="lazy" decoding="async" fetchpriority="low" />
+                <img class="app-card-thumb" src="${imgUrl}" alt="" width="128" height="128" loading="lazy" decoding="async" fetchpriority="low" />
               </div>
               <div class="app-card-body">
                 <h3 class="app-card-title">${app.name}</h3>
