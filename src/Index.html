@@ -99,7 +99,7 @@
 
   <main id="main-content" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-grow w-full">
     <div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
-      <h1 class="text-3xl font-bold text-[#1f2933] dark:text-white tracking-tight transition-colors">คลังแอปพลิเคชัน</h1>
+      <h1 class="page-hero-title text-3xl font-bold tracking-tight transition-colors">คลังแอปพลิเคชัน</h1>
       <div class="flex gap-3">
         <div class="relative" id="sort-dropdown-wrap">
           <input type="hidden" id="sort-select" value="popular">
@@ -169,11 +169,11 @@
   <div id="login-modal" class="hidden fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
     <div class="bg-white dark:bg-[#1a2029] p-8 rounded-3xl shadow-2xl w-96 border border-[#e3ddd2] dark:border-[#2d3544] transition-colors">
       <h2 class="text-2xl font-bold mb-6 text-[#1f2933] dark:text-white text-center">เข้าสู่ระบบ</h2>
-      <input type="text" id="username" placeholder="ชื่อผู้ใช้" class="w-full border border-[#e3ddd2] dark:border-[#2d3544] text-[#1f2933] dark:text-white rounded-xl p-3 mb-4 bg-[#f5f3ee] dark:bg-[#121820] focus:border-[#2c3548] outline-none">
-      <input type="password" id="password" placeholder="รหัสผ่าน" class="w-full border border-[#e3ddd2] dark:border-[#2d3544] text-[#1f2933] dark:text-white rounded-xl p-3 mb-6 bg-[#f5f3ee] dark:bg-[#121820] focus:border-[#2c3548] outline-none">
+      <input type="text" id="username" placeholder="ชื่อผู้ใช้" class="w-full border border-[#e3ddd2] dark:border-[#2d3544] text-[#1f2933] dark:text-white rounded-2xl p-3 mb-4 bg-[#f5f3ee] dark:bg-[#121820] focus:border-[#2c3548] outline-none">
+      <input type="password" id="password" placeholder="รหัสผ่าน" class="w-full border border-[#e3ddd2] dark:border-[#2d3544] text-[#1f2933] dark:text-white rounded-2xl p-3 mb-6 bg-[#f5f3ee] dark:bg-[#121820] focus:border-[#2c3548] outline-none">
       <div class="flex justify-between gap-3">
-        <button onclick="toggleLoginModal()" class="w-full py-3 text-[#6b7885] dark:text-[#b8c0c8] bg-[#f5f3ee] dark:bg-[#121820] rounded-xl hover:bg-[#e3ddd2] dark:hover:bg-[#2a3340] transition-colors">ยกเลิก</button>
-        <button onclick="doLogin()" class="w-full py-3 btn-lux-primary rounded-xl">ยืนยัน</button>
+        <button onclick="toggleLoginModal()" class="w-full py-3 text-[#6b7885] dark:text-[#b8c0c8] bg-[#f5f3ee] dark:bg-[#121820] rounded-2xl hover:bg-[#e3ddd2] dark:hover:bg-[#2a3340] transition-colors">ยกเลิก</button>
+        <button onclick="doLogin()" class="w-full py-3 btn-lux-primary rounded-2xl">ยืนยัน</button>
       </div>
     </div>
   </div>
@@ -184,19 +184,19 @@
       <div class="space-y-4">
         <div>
           <label class="block text-sm text-[#6b7885] dark:text-[#b8c0c8] mb-1">ชื่อโปรแกรม</label>
-          <input type="text" id="new-name" class="w-full border border-[#e3ddd2] dark:border-[#2d3544] text-[#1f2933] dark:text-white rounded-xl p-3 bg-[#f5f3ee] dark:bg-[#121820] focus:border-[#2c3548] outline-none">
+          <input type="text" id="new-name" class="w-full border border-[#e3ddd2] dark:border-[#2d3544] text-[#1f2933] dark:text-white rounded-2xl p-3 bg-[#f5f3ee] dark:bg-[#121820] focus:border-[#2c3548] outline-none">
         </div>
         <div>
           <label class="block text-sm text-[#6b7885] dark:text-[#b8c0c8] mb-1">URL ลิ้งก์เข้าใช้งาน</label>
-          <input type="text" id="new-url" class="w-full border border-[#e3ddd2] dark:border-[#2d3544] text-[#1f2933] dark:text-white rounded-xl p-3 bg-[#f5f3ee] dark:bg-[#121820] focus:border-[#2c3548] outline-none">
+          <input type="text" id="new-url" class="w-full border border-[#e3ddd2] dark:border-[#2d3544] text-[#1f2933] dark:text-white rounded-2xl p-3 bg-[#f5f3ee] dark:bg-[#121820] focus:border-[#2c3548] outline-none">
         </div>
         <div>
           <label class="block text-sm text-[#6b7885] dark:text-[#b8c0c8] mb-1">รูปภาพหน้าปก <span id="crop-status-proj" class="text-green-500 text-xs hidden">(อัปโหลดรูปสำเร็จ)</span></label>
-          <input type="file" id="new-img-file" accept="image/*" class="w-full border border-[#e3ddd2] dark:border-[#2d3544] rounded-xl p-2 bg-[#f5f3ee] dark:bg-[#121820] text-sm text-[#6b7885] dark:text-[#b8c0c8] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-[#ebe6dc] dark:file:bg-[#2a3340] file:text-[#2c3542] dark:file:text-[#f5f3ee]">
+          <input type="file" id="new-img-file" accept="image/*" class="w-full border border-[#e3ddd2] dark:border-[#2d3544] rounded-2xl p-2 bg-[#f5f3ee] dark:bg-[#121820] text-sm text-[#6b7885] dark:text-[#b8c0c8] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-[#ebe6dc] dark:file:bg-[#2a3340] file:text-[#2c3542] dark:file:text-[#f5f3ee]">
         </div>
         <div>
           <label class="block text-sm text-[#6b7885] dark:text-[#b8c0c8] mb-1">สถานะ</label>
-          <select id="new-status" class="w-full border border-[#e3ddd2] dark:border-[#2d3544] text-[#1f2933] dark:text-white rounded-xl p-3 bg-[#f5f3ee] dark:bg-[#121820] focus:border-[#2c3548] outline-none">
+          <select id="new-status" class="w-full border border-[#e3ddd2] dark:border-[#2d3544] text-[#1f2933] dark:text-white rounded-2xl p-3 bg-[#f5f3ee] dark:bg-[#121820] focus:border-[#2c3548] outline-none">
             <option value="พร้อมใช้งาน">พร้อมใช้งาน</option>
             <option value="กำลังพัฒนา">กำลังพัฒนา</option>
           </select>
@@ -213,7 +213,7 @@
     <div class="bg-white dark:bg-[#1a2029] p-8 rounded-3xl shadow-2xl w-full max-w-sm border border-[#e3ddd2] dark:border-[#2d3544] text-center transition-colors">
       <h2 id="upload-title" class="text-2xl font-bold mb-2 text-[#1f2933] dark:text-white">อัปโหลดรูปภาพ</h2>
       <p class="text-sm text-[#6b7885] dark:text-[#b8c0c8] mb-6">เลือกไฟล์จากอุปกรณ์ของคุณ</p>
-      <input type="file" id="upload-file" accept="image/*" class="w-full mb-2 border border-[#e3ddd2] dark:border-[#2d3544] rounded-xl p-2 bg-[#f5f3ee] dark:bg-[#121820] text-sm text-[#6b7885] dark:text-[#b8c0c8] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-[#ebe6dc] dark:file:bg-[#2a3340] file:text-[#2c3542] dark:file:text-[#f5f3ee]">
+      <input type="file" id="upload-file" accept="image/*" class="w-full mb-2 border border-[#e3ddd2] dark:border-[#2d3544] rounded-2xl p-2 bg-[#f5f3ee] dark:bg-[#121820] text-sm text-[#6b7885] dark:text-[#b8c0c8] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-[#ebe6dc] dark:file:bg-[#2a3340] file:text-[#2c3542] dark:file:text-[#f5f3ee]">
       <p id="crop-status-upload" class="text-green-500 text-xs mb-4 hidden">ตัดรูปภาพพร้อมอัปโหลดแล้ว!</p>
       
       <div class="flex justify-center gap-3">
@@ -229,7 +229,7 @@
       <div class="space-y-4">
         <div>
           <label class="block text-sm text-[#6b7885] dark:text-[#b8c0c8] mb-1">ข้อความประกาศ</label>
-          <textarea id="edit-banner-text" rows="3" placeholder="พิมพ์ข้อความที่ต้องการแจ้งให้ผู้ใช้งานทราบ..." class="w-full border border-[#e3ddd2] dark:border-[#2d3544] text-[#1f2933] dark:text-white rounded-xl p-3 bg-[#f5f3ee] dark:bg-[#121820] focus:border-[#2c3548] outline-none resize-none"></textarea>
+          <textarea id="edit-banner-text" rows="3" placeholder="พิมพ์ข้อความที่ต้องการแจ้งให้ผู้ใช้งานทราบ..." class="w-full border border-[#e3ddd2] dark:border-[#2d3544] text-[#1f2933] dark:text-white rounded-2xl p-3 bg-[#f5f3ee] dark:bg-[#121820] focus:border-[#2c3548] outline-none resize-none"></textarea>
         </div>
         <div class="flex items-center gap-2 mt-2">
           <input type="checkbox" id="edit-banner-visible" class="w-5 h-5 accent-[#2c3548] cursor-pointer">
@@ -246,7 +246,7 @@
   <div id="cropper-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[60] p-4">
     <div class="bg-white dark:bg-[#1a2029] p-6 rounded-3xl shadow-2xl w-full max-w-3xl flex flex-col items-center transition-colors">
       <h2 class="text-xl font-bold mb-4 text-[#1f2933] dark:text-white">จัดตำแหน่งและตัดรูปภาพ</h2>
-      <div class="w-full h-[50vh] bg-gray-100 dark:bg-[#121820] rounded-xl overflow-hidden mb-6 relative">
+      <div class="w-full h-[50vh] bg-gray-100 dark:bg-[#121820] rounded-2xl overflow-hidden mb-6 relative">
         <img id="cropper-image" class="max-w-full block" src="">
       </div>
       <div class="flex gap-3 w-full justify-center">

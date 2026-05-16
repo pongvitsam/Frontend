@@ -493,34 +493,32 @@ let appData = [];
       var cardsHtml = '';
       sortedApps.forEach(app => {
         const isReady = app.status === 'พร้อมใช้งาน';
-        const cardClass = isReady ? 'glass-card hover:-translate-y-1 transition-transform cursor-pointer' : 'glass-card grayscale-card';
-        const badgeClass = isReady ? 'bg-[#f0ebe3] dark:bg-[#2a3340] text-[#8b7355] dark:text-[#c9b896]' : 'bg-[#eceae5] dark:bg-[#222a35] text-[#6b7885] dark:text-[#8a96a3]';
+        const cardClass = isReady ? 'lux-app-card--active' : 'lux-app-card--disabled';
+        const badgeClass = isReady ? 'app-card-badge app-card-badge--ready' : 'app-card-badge app-card-badge--wait';
         const imgUrl = thumbUrl(app.imageUrl);
 
         const adminControls = isAdmin 
           ? `<div class="flex items-center gap-3">
-               <span class="text-xs text-[#8a96a3] dark:text-[#b8c0c8] bg-[#f5f3ee] dark:bg-[#121820] px-2 py-1 rounded-md transition-colors"><i class="fa-solid fa-chart-simple mr-1"></i> ${app.clicks}</span>
+               <span class="text-xs text-[#8a96a3] dark:text-[#b8c0c8] bg-[#f5f3ee] dark:bg-[#121820] px-2.5 py-1 rounded-full transition-colors"><i class="fa-solid fa-chart-simple mr-1"></i> ${app.clicks}</span>
                <button onclick="event.stopPropagation(); editApp('${app.id}')" class="text-[#2c3548] hover:text-[#8b7355] transition" title="แก้ไข"><i class="fa-solid fa-pen-to-square text-lg"></i></button>
                <button onclick="event.stopPropagation(); deleteApp('${app.id}')" class="text-[#9a7b6a] hover:text-[#7d5e52] transition" title="ลบ"><i class="fa-solid fa-trash text-lg"></i></button>
              </div>` : ``;
 
         cardsHtml += `
-          <div class="rounded-2xl overflow-hidden flex flex-col ${cardClass}" onclick="openApp('${app.id}', '${app.name}', '${app.url}', ${isReady})">
-            <div class="app-card-media w-full border-b border-[#e3ddd2] dark:border-[#2d3544] bg-[#e3ddd2] dark:bg-[#222a35]">
-              <img src="${imgUrl}" alt="" width="320" height="112" loading="lazy" decoding="async" fetchpriority="low" />
-            </div>
-            <div class="app-card-body flex-grow flex flex-col justify-between">
-              <div>
-                <h3 class="font-semibold text-base mb-1.5 text-[#1f2933] dark:text-[#f5f3ee] break-words">${app.name}</h3>
-                <span class="text-xs font-medium px-2.5 py-0.5 rounded-full ${badgeClass}">${app.status}</span>
+          <div class="lux-app-card ${cardClass}" onclick="openApp('${app.id}', '${app.name}', '${app.url}', ${isReady})">
+            <article class="app-card-shell">
+              <div class="app-card-visual">
+                <img class="app-card-thumb" src="${imgUrl}" alt="" width="84" height="84" loading="lazy" decoding="async" fetchpriority="low" />
               </div>
-              <div class="mt-3 flex justify-between items-end">
-                <div class="w-7 h-7 rounded-full bg-[#f5f3ee] dark:bg-[#121820] flex items-center justify-center text-[#2c3548] text-xs shadow-inner">
-                  <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              <div class="app-card-body">
+                <h3 class="app-card-title">${app.name}</h3>
+                <span class="${badgeClass}">${app.status}</span>
+                <div class="app-card-footer">
+                  <div class="app-card-action"><i class="fa-solid fa-arrow-up-right-from-square"></i></div>
+                  ${adminControls}
                 </div>
-                ${adminControls}
               </div>
-            </div>
+            </article>
           </div>`;
       });
       grid.innerHTML = cardsHtml;
