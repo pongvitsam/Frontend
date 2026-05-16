@@ -261,16 +261,17 @@ let appData = [];
       }).getInitialData();
     }
 
-    function registerServiceWorkerDeferred() {
-      if (!('serviceWorker' in navigator)) return;
-      navigator.serviceWorker
-        .register('sw.js?v=' + ((window.APP_CONFIG && window.APP_CONFIG.assetVersion) || '13'))
-        .then(function (reg) {
-          if (reg.waiting && navigator.serviceWorker.controller) {
-            reg.waiting.postMessage({ type: 'skipWaiting' });
-          }
-        })
-        .catch(function () {});
+    function cleanupLegacyServiceWorker() {
+      if ('caches' in window) {
+        caches.keys().then(function (keys) {
+          return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+        }).catch(function () {});
+      }
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function (regs) {
+          return Promise.all(regs.map(function (r) { return r.unregister(); }));
+        }).catch(function () {});
+      }
     }
 
     function startApplicationBoot() {
@@ -279,13 +280,13 @@ let appData = [];
       if (pending && pending.apps) {
         bootFinished = true;
         initApp(pending, { fromCache: true });
-        registerServiceWorkerDeferred();
+        cleanupLegacyServiceWorker();
         refreshDataInBackground();
         return;
       }
       if (tryHydrateFromCache()) {
         bootFinished = true;
-        registerServiceWorkerDeferred();
+        cleanupLegacyServiceWorker();
         refreshDataInBackground();
         return;
       }
@@ -298,7 +299,7 @@ let appData = [];
           clearTimeout(retryBtnTimer);
           bootFinished = true;
           initApp(data, { fromCache: false });
-          registerServiceWorkerDeferred();
+          cleanupLegacyServiceWorker();
         },
         function (err) {
           clearTimeout(retryBtnTimer);
@@ -309,7 +310,7 @@ let appData = [];
             if (btn) btn.classList.remove('hidden');
           } else {
             bootFinished = true;
-            registerServiceWorkerDeferred();
+            cleanupLegacyServiceWorker();
             refreshDataInBackground();
           }
         }
@@ -371,6 +372,7 @@ let appData = [];
       loadFontAwesomeDeferred();
       loadSarabunDeferred();
       initSortDropdown();
+      cleanupLegacyServiceWorker();
       var expectedV = (window.APP_CONFIG && window.APP_CONFIG.assetVersion) || '';
       if (expectedV && localStorage.getItem('pk2_asset_v') !== expectedV) {
         purgeStaleCachesAsync(expectedV);
