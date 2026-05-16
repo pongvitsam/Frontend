@@ -109,10 +109,10 @@ let appData = [];
     }
 
     function thumbUrl(url) {
-      var fallback = 'https://via.placeholder.com/400x200.png?text=No+Image';
+      var fallback = 'https://via.placeholder.com/320x112.png?text=No+Image';
       if (!url) return fallback;
       if (/drive\.google\.com\/thumbnail/i.test(url)) {
-        return url.replace(/sz=w\d+/i, 'sz=w400');
+        return url.replace(/sz=w\d+/i, 'sz=w240');
       }
       return url;
     }
@@ -484,7 +484,6 @@ let appData = [];
     function renderApps() {
       const grid = document.getElementById('app-grid');
       if (!grid) return;
-      grid.innerHTML = '';
       const sortEl = document.getElementById('sort-select');
       const sortType = sortEl ? sortEl.value : 'popular';
       let sortedApps = [...appData];
@@ -492,6 +491,7 @@ let appData = [];
       if(sortType === 'popular') sortedApps.sort((a, b) => b.clicks - a.clicks);
       else sortedApps.sort((a, b) => a.name.localeCompare(b.name));
 
+      var cardsHtml = '';
       sortedApps.forEach(app => {
         const isReady = app.status === 'พร้อมใช้งาน';
         const cardClass = isReady ? 'glass-card hover:-translate-y-1 transition-transform cursor-pointer' : 'glass-card grayscale-card';
@@ -505,25 +505,26 @@ let appData = [];
                <button onclick="event.stopPropagation(); deleteApp('${app.id}')" class="text-[#9a7b6a] hover:text-[#7d5e52] transition" title="ลบ"><i class="fa-solid fa-trash text-lg"></i></button>
              </div>` : ``;
 
-        grid.innerHTML += `
-          <div class="rounded-3xl overflow-hidden flex flex-col ${cardClass}" onclick="openApp('${app.id}', '${app.name}', '${app.url}', ${isReady})">
-            <div class="h-40 w-full overflow-hidden border-b border-[#e3ddd2] dark:border-[#2d3544] transition-colors bg-[#e3ddd2] dark:bg-[#222a35]">
-              <img src="${imgUrl}" alt="" class="h-40 w-full object-cover" width="400" height="160" loading="lazy" decoding="async" fetchpriority="low" />
+        cardsHtml += `
+          <div class="rounded-2xl overflow-hidden flex flex-col ${cardClass}" onclick="openApp('${app.id}', '${app.name}', '${app.url}', ${isReady})">
+            <div class="app-card-media w-full border-b border-[#e3ddd2] dark:border-[#2d3544] bg-[#e3ddd2] dark:bg-[#222a35]">
+              <img src="${imgUrl}" alt="" width="320" height="112" loading="lazy" decoding="async" fetchpriority="low" />
             </div>
-            <div class="p-6 flex-grow flex flex-col justify-between">
+            <div class="app-card-body flex-grow flex flex-col justify-between">
               <div>
-                <h3 class="font-bold text-lg mb-2 text-[#1f2933] dark:text-[#f5f3ee] break-words transition-colors">${app.name}</h3>
-                <span class="text-xs font-medium px-3 py-1 rounded-full ${badgeClass} transition-colors">${app.status}</span>
+                <h3 class="font-semibold text-base mb-1.5 text-[#1f2933] dark:text-[#f5f3ee] break-words">${app.name}</h3>
+                <span class="text-xs font-medium px-2.5 py-0.5 rounded-full ${badgeClass}">${app.status}</span>
               </div>
-              <div class="mt-5 flex justify-between items-end">
-                <div class="w-8 h-8 rounded-full bg-[#f5f3ee] dark:bg-[#121820] flex items-center justify-center text-[#2c3548] shadow-inner transition-colors">
-                  <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+              <div class="mt-3 flex justify-between items-end">
+                <div class="w-7 h-7 rounded-full bg-[#f5f3ee] dark:bg-[#121820] flex items-center justify-center text-[#2c3548] text-xs shadow-inner">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i>
                 </div>
                 ${adminControls}
               </div>
             </div>
           </div>`;
       });
+      grid.innerHTML = cardsHtml;
     }
 
     function openApp(id, name, url, isReady) {
