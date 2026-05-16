@@ -3,6 +3,7 @@
   var bridgeReady = false;
   var bridgeQueue = [];
   var REQUEST_TIMEOUT_MS = 25000;
+  var UPLOAD_TIMEOUT_MS = 120000;
 
   var JSONP_FUNCS = {
     getInitialData: 0,
@@ -96,22 +97,84 @@
     if (bridgeReady) return cb();
     bridgeQueue.push(cb);
     var frame = getBridgeFrame();
-    if (frame) {
-      frame.addEventListener('load', function () {
-        try {
-          if (frame.contentWindow) {
-            frame.contentWindow.postMessage({ type: 'gas-bridge-ping' }, '*');
-          }
-        } catch (err) {}
-      }, { once: true });
-    }
-    setTimeout(function () {
-      if (!bridgeReady) {
-        bridgeReady = true;
-        bridgeQueue.forEach(function (fn) { fn(); });
-        bridgeQueue = [];
+    var attempts = 0;
+    function pingBridge() {
+      if (bridgeReady) return;
+      attempts += 1;
+      try {
+        if (frame && frame.contentWindow) {
+          frame.contentWindow.postMessage({ type: 'gas-bridge-ping' }, '*');
+        }
+      } catch (err) {}
+      if (attempts < 30) {
+        setTimeout(pingBridge, 500);
       }
-    }, 3000);
+    }
+    if (frame) {
+      frame.addEventListener('load', pingBridge, { once: true });
+      if (frame.getAttribute('src') && frame.getAttribute('src') !== 'about:blank') {
+        pingBridge();
+      }
+    }
+  }
+
+  function needsFormPost(name, args) {
+    if (!isGitHubPagesHost()) return false;
+    if (name === 'saveProject' && args[1] && args[1].data) return true;
+    if (name === 'updateBackgroundImage' || name === 'updateLogoImage') return true;
+    return false;
+  }
+
+  function callFormPost(functionName, args, success, failure) {
+    var cfg = getConfig();
+    var gasUrl = cfg.gasExecUrl;
+    if (!gasUrl) {
+      if (failure) failure({ message: 'ไม่พบ URL API' });
+      return;
+    }
+    var cbName = 'gasForm_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    var timer = setTimeout(function () {
+      cleanup();
+      if (failure) failure({ message: 'หมดเวลาอัปโหลด (ไฟล์ใหญ่เกินไปหรือเชื่อมต่อช้า)' });
+    }, UPLOAD_TIMEOUT_MS);
+
+    function cleanup() {
+      clearTimeout(timer);
+      try { delete global[cbName]; } catch (e) {}
+    }
+
+    global[cbName] = function (res) {
+      cleanup();
+      if (res && res.ok) {
+        if (success) success(res.data);
+      } else if (failure) {
+        failure({ message: (res && res.error) || 'อัปโหลดไม่สำเร็จ' });
+      }
+    };
+
+    var form = document.createElement('form');
+    form.method = 'POST';
+    form.action = gasUrl;
+    form.target = 'gas-form-frame';
+    form.style.display = 'none';
+    form.acceptCharset = 'UTF-8';
+
+    function addField(n, v) {
+      var input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = n;
+      input.value = v;
+      form.appendChild(input);
+    }
+
+    addField('action', functionName);
+    addField('args', JSON.stringify(args || []));
+    addField('callback', cbName);
+    document.body.appendChild(form);
+    form.submit();
+    setTimeout(function () {
+      if (form.parentNode) form.parentNode.removeChild(form);
+    }, 2000);
   }
 
   function callJsonp(functionName, args, success, failure) {
@@ -188,6 +251,10 @@
       if (success) runner = runner.withSuccessHandler(success);
       if (failure) runner = runner.withFailureHandler(failure);
       runner[functionName].apply(runner, args || []);
+      return;
+    }
+    if (needsFormPost(functionName, args)) {
+      callFormPost(functionName, args, success, failure);
       return;
     }
     if (shouldUseJsonp(functionName, args)) {

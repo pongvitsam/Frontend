@@ -297,6 +297,15 @@ let appData = [];
           el.innerHTML = '<p class="text-center text-red-500 px-4">โหลดข้อมูลไม่สำเร็จ โปรดรีเฟรชหน้า</p>';
         }
       }, 25000);
+      window.addEventListener('pk2-prefetch-ready', function (ev) {
+        var main = document.getElementById('main-content');
+        if (main && !main.classList.contains('hidden')) return;
+        if (ev.detail && ev.detail.apps) {
+          clearTimeout(loadTimer);
+          initApp(ev.detail, { fromCache: false });
+        }
+      });
+
       waitForPrefetchThenLoad(
         function (data) {
           clearTimeout(loadTimer);
@@ -305,10 +314,7 @@ let appData = [];
         function (err) {
           clearTimeout(loadTimer);
           console.error(err);
-          var el = document.getElementById('loading-state');
-          if (el) {
-            el.innerHTML = '<p class="text-center text-red-500 px-4">โหลดข้อมูลไม่สำเร็จ โปรดรีเฟรชหน้า (Ctrl+Shift+R)</p>';
-          }
+          showLoadError('โหลดข้อมูลไม่สำเร็จ โปรดรีเฟรชหน้า (Ctrl+Shift+R)');
         }
       );
     });
@@ -505,13 +511,25 @@ let appData = [];
       document.getElementById('crop-status-upload').classList.add('hidden');
     }
 
+    function handleUploadError(err) {
+      restoreAdminUI();
+      alert((err && err.message) || 'อัปโหลดไม่สำเร็จ กรุณาลองใหม่');
+    }
+
     function confirmCrop() {
       if (!cropper) return;
-      const canvas = cropper.getCroppedCanvas({ maxWidth: 1200, maxHeight: 1200 });
+      const canvas = cropper.getCroppedCanvas({ maxWidth: 800, maxHeight: 800 });
       const fileInput = document.getElementById('new-img-file').files.length > 0 ? document.getElementById('new-img-file') : document.getElementById('upload-file');
       const originalFile = fileInput.files[0];
-      const base64Url = canvas.toDataURL(originalFile.type);
-      croppedFileData = { data: base64Url.split(',')[1], mimeType: originalFile.type, name: originalFile.name };
+      const useJpeg = originalFile.type !== 'image/png';
+      const mime = useJpeg ? 'image/jpeg' : 'image/png';
+      const base64Url = useJpeg ? canvas.toDataURL(mime, 0.85) : canvas.toDataURL(mime);
+      const baseName = (originalFile.name || 'image').replace(/\.[^.]+$/, '');
+      croppedFileData = {
+        data: base64Url.split(',')[1],
+        mimeType: mime,
+        name: baseName + (useJpeg ? '.jpg' : '.png'),
+      };
       document.getElementById('cropper-modal').classList.add('hidden');
       if (cropper) cropper.destroy();
       if(document.getElementById('new-img-file').files.length > 0) {
@@ -568,9 +586,28 @@ let appData = [];
       const p = { id: editingAppId, name: n, url: u, status: s, imageUrl: "" };
       
       if (croppedFileData) {
-        gasRun().withSuccessHandler(res => { invalidateSessionCache(); appData = res; editingAppId = null; croppedFileData = null; restoreAdminUI(); loadDashboardData(); }).saveProject(p, croppedFileData);
+        gasRun()
+          .withSuccessHandler(function (res) {
+            invalidateSessionCache();
+            appData = res;
+            editingAppId = null;
+            croppedFileData = null;
+            restoreAdminUI();
+            loadDashboardData();
+          })
+          .withFailureHandler(handleUploadError)
+          .saveProject(p, croppedFileData);
       } else {
-        gasRun().withSuccessHandler(res => { invalidateSessionCache(); appData = res; editingAppId = null; restoreAdminUI(); loadDashboardData(); }).saveProject(p, null);
+        gasRun()
+          .withSuccessHandler(function (res) {
+            invalidateSessionCache();
+            appData = res;
+            editingAppId = null;
+            restoreAdminUI();
+            loadDashboardData();
+          })
+          .withFailureHandler(handleUploadError)
+          .saveProject(p, null);
       }
     }
       async function deleteApp(id) {
@@ -621,13 +658,29 @@ let appData = [];
       if(!croppedFileData) return alert('กรุณาเลือกไฟล์และกดยืนยันการตัดรูปภาพก่อนครับ');
       closeUploadModal(); showLoadingUI();
       if(uploadTarget === 'bg') {
-        gasRun().withSuccessHandler(url => { invalidateSessionCache(); if(url) document.body.style.backgroundImage = `url('${url}')`; croppedFileData = null; restoreAdminUI(); }).updateBackgroundImage(croppedFileData);
+        gasRun()
+          .withSuccessHandler(function (url) {
+            invalidateSessionCache();
+            if (url) document.body.style.backgroundImage = "url('" + url + "')";
+            croppedFileData = null;
+            restoreAdminUI();
+          })
+          .withFailureHandler(handleUploadError)
+          .updateBackgroundImage(croppedFileData);
       } else {
-        gasRun().withSuccessHandler(url => { 
-          invalidateSessionCache();
-          if(url) { document.getElementById('site-logo').src = url; document.getElementById('site-logo').classList.remove('hidden'); document.getElementById('default-logo-icon').classList.add('hidden'); } 
-          croppedFileData = null; restoreAdminUI(); 
-        }).updateLogoImage(croppedFileData);
+        gasRun()
+          .withSuccessHandler(function (url) {
+            invalidateSessionCache();
+            if (url) {
+              document.getElementById('site-logo').src = url;
+              document.getElementById('site-logo').classList.remove('hidden');
+              document.getElementById('default-logo-icon').classList.add('hidden');
+            }
+            croppedFileData = null;
+            restoreAdminUI();
+          })
+          .withFailureHandler(handleUploadError)
+          .updateLogoImage(croppedFileData);
       }
     };
 

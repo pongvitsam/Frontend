@@ -5,5 +5,5 @@ window.APP_CONFIG = {
   "bridgeOrigins": [
     "https://pongvitsam.github.io"
   ],
-  "assetVersion": "10"
+  "assetVersion": "11"
 };

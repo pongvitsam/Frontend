@@ -61,9 +61,53 @@ function doGet(e) {
   return redirectToPages_();
 }
 
+function invokeApiAction_(action, args) {
+  args = args || [];
+  switch (action) {
+    case 'getInitialData':
+      return getInitialData();
+    case 'getAdminDashboardData':
+      return getAdminDashboardData();
+    case 'verifyLogin':
+      return verifyLogin(args[0], args[1]);
+    case 'recordClick':
+      recordClick(args[0], args[1]);
+      return true;
+    case 'updateBanner':
+      return updateBanner(args[0], args[1]);
+    case 'deleteProject':
+      return deleteProject(args[0]);
+    case 'saveProject':
+      return saveProject(args[0], args[1] || null);
+    case 'updateBackgroundImage':
+      return updateBackgroundImage(args[0]);
+    case 'updateLogoImage':
+      return updateLogoImage(args[0]);
+    default:
+      throw new Error('Unknown action: ' + action);
+  }
+}
+
+function formatApiResponse_(payload, callback, htmlCallback) {
+  var body = JSON.stringify(payload);
+  if (!callback) {
+    return ContentService.createTextOutput(body).setMimeType(ContentService.MimeType.JSON);
+  }
+  if (htmlCallback) {
+    var safeCb = String(callback).replace(/[^\w$._-]/g, '');
+    return HtmlService.createHtmlOutput(
+      '<!DOCTYPE html><html><body><script>try{var f=parent["' +
+        safeCb +
+        '"];if(typeof f==="function")f(' +
+        body +
+        ');}catch(e){}</script></body></html>'
+    ).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  }
+  return ContentService.createTextOutput(callback + '(' + body + ')')
+    .setMimeType(ContentService.MimeType.JAVASCRIPT);
+}
+
 function handleApiRequest_(params) {
-  var action = params.action;
-  var callback = params.callback;
   var args = [];
   if (params.args) {
     try {
@@ -74,40 +118,40 @@ function handleApiRequest_(params) {
   }
   var payload;
   try {
-    var data;
-    switch (action) {
-      case 'getInitialData':
-        data = getInitialData();
-        break;
-      case 'getAdminDashboardData':
-        data = getAdminDashboardData();
-        break;
-      case 'verifyLogin':
-        data = verifyLogin(args[0], args[1]);
-        break;
-      case 'recordClick':
-        recordClick(args[0], args[1]);
-        data = true;
-        break;
-      case 'updateBanner':
-        data = updateBanner(args[0], args[1]);
-        break;
-      case 'deleteProject':
-        data = deleteProject(args[0]);
-        break;
-      default:
-        throw new Error('Unknown action: ' + action);
-    }
-    payload = { ok: true, data: data };
+    payload = { ok: true, data: invokeApiAction_(params.action, args) };
   } catch (err) {
     payload = { ok: false, error: String(err.message || err) };
   }
-  var body = JSON.stringify(payload);
-  if (callback) {
-    return ContentService.createTextOutput(callback + '(' + body + ')')
-      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  return formatApiResponse_(payload, params.callback, false);
+}
+
+function doPost(e) {
+  var params = {};
+  if (e && e.postData && e.postData.contents) {
+    try {
+      params = JSON.parse(e.postData.contents);
+    } catch (err) {
+      params = (e && e.parameter) || {};
+    }
+  } else {
+    params = (e && e.parameter) || {};
   }
-  return ContentService.createTextOutput(body).setMimeType(ContentService.MimeType.JSON);
+  var args = params.args;
+  if (typeof args === 'string') {
+    try {
+      args = JSON.parse(args);
+    } catch (err2) {
+      args = [];
+    }
+  }
+  if (!Array.isArray(args)) args = [];
+  var payload;
+  try {
+    payload = { ok: true, data: invokeApiAction_(params.action, args) };
+  } catch (err3) {
+    payload = { ok: false, error: String(err3.message || err3) };
+  }
+  return formatApiResponse_(payload, params.callback, true);
 }
 
 // ---------------- API & Functions ----------------
