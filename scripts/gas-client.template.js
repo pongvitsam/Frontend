@@ -48,6 +48,21 @@
     return document.getElementById('gas-bridge-frame');
   }
 
+  function ensureBridgeFrameLoaded(cb) {
+    var frame = getBridgeFrame();
+    if (!frame) {
+      if (cb) cb();
+      return;
+    }
+    var bridgeSrc = frame.getAttribute('data-bridge-src');
+    if (bridgeSrc && (!frame.getAttribute('src') || frame.getAttribute('src') === 'about:blank')) {
+      frame.addEventListener('load', function () { if (cb) cb(); }, { once: true });
+      frame.setAttribute('src', bridgeSrc);
+      return;
+    }
+    if (cb) cb();
+  }
+
   function initBridgeListener() {
     if (global.__gasBridgeListener) return;
     global.__gasBridgeListener = true;
@@ -136,6 +151,7 @@
   }
 
   function callBridge(functionName, args, success, failure) {
+    ensureBridgeFrameLoaded(function () {
     whenBridgeReady(function () {
       var id = 'b_' + Date.now() + '_' + Math.random().toString(36).slice(2);
       var timer = setTimeout(function () {
@@ -162,6 +178,7 @@
         delete pending[id];
         if (failure) failure({ message: err.message || String(err) });
       }
+    });
     });
   }
 

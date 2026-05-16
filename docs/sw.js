@@ -1,11 +1,11 @@
-const CACHE = 'frontend-v9';
+const CACHE = 'frontend-v10';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css?v=9',
-  './config.js?v=9',
-  './gas-client.js?v=9',
-  './app.js?v=9',
+  './styles.css?v=10',
+  './config.js?v=10',
+  './gas-client.js?v=10',
+  './app.js?v=10',
 ];
 
 function isDocumentOrStyle(req) {

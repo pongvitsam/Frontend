@@ -39,6 +39,9 @@
         try {
           localStorage.setItem(LS_KEY, JSON.stringify({ t: Date.now(), data: res.data }));
         } catch (e) {}
+        try {
+          window.dispatchEvent(new CustomEvent('pk2-prefetch-ready', { detail: res.data }));
+        } catch (e2) {}
       }
     };
     var s = document.createElement('script');
@@ -49,7 +52,7 @@
   })();
   </script>
 
-  <link rel="stylesheet" href="styles.css?v=9">
+  <link rel="stylesheet" href="styles.css?v=10">
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -246,9 +249,9 @@
       </div>
     </div>
   </div>
-  <script src="config.js?v=9"></script>
-  <script src="gas-client.js?v=9"></script>
-  <iframe id="gas-bridge-frame" src="https://script.google.com/macros/s/AKfycby8V8L2CRZINAgkEcqfwjduA8w_7Yrl9t5AoQmISqtzq9BsghYbVjKOlZHvMuZdVUsagw/exec?page=bridge" style="position:absolute;width:0;height:0;border:0;visibility:hidden" title="GAS Bridge"></iframe>
-  <script src="app.js?v=9"></script>
+  <script src="config.js?v=10"></script>
+  <script src="gas-client.js?v=10"></script>
+  <iframe id="gas-bridge-frame" data-bridge-src="https://script.google.com/macros/s/AKfycby8V8L2CRZINAgkEcqfwjduA8w_7Yrl9t5AoQmISqtzq9BsghYbVjKOlZHvMuZdVUsagw/exec?page=bridge" src="about:blank" style="position:absolute;width:0;height:0;border:0;visibility:hidden" title="GAS Bridge"></iframe>
+  <script src="app.js?v=10"></script>
 </body>
 </html>

@@ -141,17 +141,14 @@ let appData = [];
     }
 
     function refreshDataInBackground() {
-      gasRun()
-        .withSuccessHandler(function (data) {
-          initApp(data, { silent: true });
-        })
-        .withFailureHandler(function () {})
-        .getInitialData();
+      loadInitialData(
+        function (data) { initApp(data, { silent: true }); },
+        function () {}
+      );
     }
 
-    function purgeStaleCachesAndReload(expectedV) {
-      localStorage.setItem('pk2_asset_v', expectedV);
-      var done = function () { location.reload(); };
+    function purgeStaleCachesAsync(expectedV) {
+      try { localStorage.setItem('pk2_asset_v', expectedV); } catch (e) {}
       var p = Promise.resolve();
       if ('caches' in window) {
         p = caches.keys().then(function (keys) {
@@ -164,7 +161,79 @@ let appData = [];
             return Promise.all(regs.map(function (r) { return r.unregister(); }));
           });
         }
-      }).then(done).catch(done);
+      }).catch(function () {});
+    }
+
+    function fetchInitialDataJsonp(success, failure) {
+      var cfg = window.APP_CONFIG || {};
+      var gasUrl = cfg.gasExecUrl;
+      if (!gasUrl) {
+        if (failure) failure({ message: 'ไม่พบ URL API' });
+        return;
+      }
+      var cbName = 'gasInit_' + Date.now();
+      var script = document.createElement('script');
+      var timer = setTimeout(function () {
+        cleanup();
+        if (failure) failure({ message: 'หมดเวลาเชื่อมต่อเซิร์ฟเวอร์' });
+      }, 20000);
+
+      function cleanup() {
+        clearTimeout(timer);
+        try { delete window[cbName]; } catch (e) {}
+        if (script.parentNode) script.parentNode.removeChild(script);
+      }
+
+      window[cbName] = function (res) {
+        cleanup();
+        if (res && res.ok && res.data) {
+          if (success) success(res.data);
+        } else if (failure) {
+          failure({ message: (res && res.error) || 'API error' });
+        }
+      };
+
+      script.onerror = function () {
+        cleanup();
+        if (failure) failure({ message: 'โหลด API ไม่สำเร็จ' });
+      };
+      script.src = gasUrl + '?action=getInitialData&callback=' + encodeURIComponent(cbName);
+      document.head.appendChild(script);
+    }
+
+    function loadInitialData(success, failure) {
+      if (window.__PREFETCH_DATA__ && window.__PREFETCH_DATA__.apps) {
+        success(window.__PREFETCH_DATA__);
+        return;
+      }
+      if (window.__BOOT_DATA__ && window.__BOOT_DATA__.apps) {
+        success(window.__BOOT_DATA__);
+        return;
+      }
+      var host = window.location && window.location.hostname;
+      var onPages = host === 'pongvitsam.github.io' || (host && host.endsWith('.github.io'));
+      if (onPages) {
+        fetchInitialDataJsonp(success, failure);
+        return;
+      }
+      gasRun().withSuccessHandler(success).withFailureHandler(function (err) {
+        fetchInitialDataJsonp(success, failure);
+      }).getInitialData();
+    }
+
+    function waitForPrefetchThenLoad(success, failure, attempt) {
+      attempt = attempt || 0;
+      if (window.__PREFETCH_DATA__ && window.__PREFETCH_DATA__.apps) {
+        success(window.__PREFETCH_DATA__);
+        return;
+      }
+      if (attempt >= 20) {
+        loadInitialData(success, failure);
+        return;
+      }
+      setTimeout(function () {
+        waitForPrefetchThenLoad(success, failure, attempt + 1);
+      }, 150);
     }
 
     var SORT_LABELS = { popular: 'เรียงตามความนิยม', az: 'เรียงตามตัวอักษร (A-Z)' };
@@ -211,8 +280,7 @@ let appData = [];
       initSortDropdown();
       var expectedV = (window.APP_CONFIG && window.APP_CONFIG.assetVersion) || '';
       if (expectedV && localStorage.getItem('pk2_asset_v') !== expectedV) {
-        purgeStaleCachesAndReload(expectedV);
-        return;
+        purgeStaleCachesAsync(expectedV);
       }
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js').catch(function () {});
@@ -229,18 +297,20 @@ let appData = [];
           el.innerHTML = '<p class="text-center text-red-500 px-4">โหลดข้อมูลไม่สำเร็จ โปรดรีเฟรชหน้า</p>';
         }
       }, 25000);
-      gasRun()
-        .withSuccessHandler(function(data) {
+      waitForPrefetchThenLoad(
+        function (data) {
           clearTimeout(loadTimer);
           initApp(data, { fromCache: false });
-        })
-        .withFailureHandler(function(err) {
+        },
+        function (err) {
           clearTimeout(loadTimer);
           console.error(err);
           var el = document.getElementById('loading-state');
-          if (el) el.innerHTML = '<p class="text-center text-red-500 px-4">โหลดข้อมูลไม่สำเร็จ โปรดรีเฟรชหน้า</p>';
-        })
-        .getInitialData();
+          if (el) {
+            el.innerHTML = '<p class="text-center text-red-500 px-4">โหลดข้อมูลไม่สำเร็จ โปรดรีเฟรชหน้า (Ctrl+Shift+R)</p>';
+          }
+        }
+      );
     });
 
     // ฟังก์ชันสลับโหมด มืด/สว่าง
@@ -263,27 +333,44 @@ let appData = [];
 
     function initApp(data, opts) {
       opts = opts || {};
-      document.getElementById('user-email').innerText = data.email;
-      appData = data.apps;
-
-      globalBannerText = data.bannerText || '';
-      globalBannerVisible = (data.bannerVisible === true || data.bannerVisible === 'true');
-      renderBanner();
-
-      if (data.bgImage) document.body.style.backgroundImage = 'url(\'' + data.bgImage + '\')';
-      if (data.logoImage) {
-        document.getElementById('site-logo').src = data.logoImage;
-        document.getElementById('site-logo').classList.remove('hidden');
-        document.getElementById('default-logo-icon').classList.add('hidden');
+      if (!data || !Array.isArray(data.apps)) {
+        showLoadError('ข้อมูลไม่ถูกต้อง');
+        return;
       }
+      try {
+        var emailEl = document.getElementById('user-email');
+        if (emailEl) emailEl.innerText = data.email || '';
+        appData = data.apps;
 
-      document.getElementById('loading-state').classList.add('hidden');
-      document.getElementById('main-content').classList.remove('hidden');
-      renderApps();
+        globalBannerText = data.bannerText || '';
+        globalBannerVisible = (data.bannerVisible === true || data.bannerVisible === 'true');
+        renderBanner();
 
-      if (!opts.silent) {
-        persistCache(data);
+        if (data.bgImage) document.body.style.backgroundImage = 'url(\'' + data.bgImage + '\')';
+        if (data.logoImage) {
+          document.getElementById('site-logo').src = data.logoImage;
+          document.getElementById('site-logo').classList.remove('hidden');
+          document.getElementById('default-logo-icon').classList.add('hidden');
+        }
+
+        var loadingEl = document.getElementById('loading-state');
+        var mainEl = document.getElementById('main-content');
+        if (loadingEl) loadingEl.classList.add('hidden');
+        if (mainEl) mainEl.classList.remove('hidden');
+        renderApps();
+
+        if (!opts.silent) {
+          persistCache(data);
+        }
+      } catch (err) {
+        console.error(err);
+        showLoadError('แสดงผลไม่สำเร็จ โปรดรีเฟรชหน้า');
       }
+    }
+
+    function showLoadError(msg) {
+      var el = document.getElementById('loading-state');
+      if (el) el.innerHTML = '<p class="text-center text-red-500 px-4">' + msg + '</p>';
     }
 
     function renderBanner() {
@@ -323,8 +410,10 @@ let appData = [];
 
     function renderApps() {
       const grid = document.getElementById('app-grid');
+      if (!grid) return;
       grid.innerHTML = '';
-      const sortType = document.getElementById('sort-select').value;
+      const sortEl = document.getElementById('sort-select');
+      const sortType = sortEl ? sortEl.value : 'popular';
       let sortedApps = [...appData];
       
       if(sortType === 'popular') sortedApps.sort((a, b) => b.clicks - a.clicks);

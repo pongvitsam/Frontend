@@ -26,6 +26,9 @@
         try {
           localStorage.setItem(LS_KEY, JSON.stringify({ t: Date.now(), data: res.data }));
         } catch (e) {}
+        try {
+          window.dispatchEvent(new CustomEvent('pk2-prefetch-ready', { detail: res.data }));
+        } catch (e2) {}
       }
     };
     var s = document.createElement('script');
