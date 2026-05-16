@@ -264,7 +264,14 @@ let appData = [];
 
     function registerServiceWorkerDeferred() {
       if (!('serviceWorker' in navigator)) return;
-      navigator.serviceWorker.register('sw.js').catch(function () {});
+      navigator.serviceWorker
+        .register('sw.js?v=' + ((window.APP_CONFIG && window.APP_CONFIG.assetVersion) || '13'))
+        .then(function (reg) {
+          if (reg.waiting && navigator.serviceWorker.controller) {
+            reg.waiting.postMessage({ type: 'skipWaiting' });
+          }
+        })
+        .catch(function () {});
     }
 
     function startApplicationBoot() {

@@ -1,13 +1,19 @@
-const CACHE = 'frontend-v12';
+const CACHE = 'frontend-v13';
 const ASSETS = [
   './',
   './index.html',
   './favicon.svg',
-  './styles.css?v=12',
-  './config.js?v=12',
-  './gas-client.js?v=12',
-  './app.js?v=12',
+  './styles.css?v=13',
+  './config.js?v=13',
+  './gas-client.js?v=13',
+  './app.js?v=13',
 ];
+
+self.addEventListener('message', function (e) {
+  if (e.data && e.data.type === 'skipWaiting') {
+    self.skipWaiting();
+  }
+});
 
 function isDocumentOrStyle(req) {
   var p = new URL(req.url).pathname;
@@ -16,22 +22,29 @@ function isDocumentOrStyle(req) {
 
 self.addEventListener('install', function (e) {
   e.waitUntil(
-    caches.open(CACHE).then(function (cache) {
-      return cache.addAll(ASSETS).catch(function () {});
-    })
+    caches.open(CACHE)
+      .then(function (cache) {
+        return cache.addAll(ASSETS).catch(function () {});
+      })
+      .then(function () {
+        return self.skipWaiting();
+      })
   );
-  self.skipWaiting();
 });
 
 self.addEventListener('activate', function (e) {
   e.waitUntil(
-    caches.keys().then(function (keys) {
-      return Promise.all(
-        keys.filter(function (k) { return k !== CACHE; }).map(function (k) { return caches.delete(k); })
-      );
-    })
+    caches.keys()
+      .then(function (keys) {
+        return Promise.all(
+          keys.filter(function (k) { return k !== CACHE; }).map(function (k) { return caches.delete(k); })
+        );
+      })
+      .then(function () {
+        return self.clients.claim();
+      })
+      .catch(function () {})
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', function (e) {
