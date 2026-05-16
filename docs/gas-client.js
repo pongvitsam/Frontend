@@ -1,7 +1,4 @@
 (function (global) {
-  var pending = {};
-  var bridgeReady = false;
-  var bridgeQueue = [];
   var REQUEST_TIMEOUT_MS = 25000;
   var UPLOAD_TIMEOUT_MS = 120000;
 
@@ -12,10 +9,16 @@
     recordClick: 2,
     updateBanner: 2,
     deleteProject: 1,
+    saveProject: 2,
   };
 
   function getConfig() {
     return global.APP_CONFIG || {};
+  }
+
+  function getGasExecUrl() {
+    var cfg = getConfig();
+    return cfg.gasExecUrl || '';
   }
 
   function isGitHubPagesHost() {
@@ -30,113 +33,28 @@
 
   function shouldUseJsonp(name, args) {
     if (isGasHost()) return false;
+    if (name === 'saveProject' && args[1] && args[1].data) return false;
     if (!Object.prototype.hasOwnProperty.call(JSONP_FUNCS, name)) return false;
     return (args || []).length === JSONP_FUNCS[name];
   }
 
-  function isAllowedBridgeOrigin(origin) {
-    if (!origin) return false;
-    var cfg = getConfig();
-    var allowed = cfg.bridgeOrigins || ['https://pongvitsam.github.io'];
-    if (allowed.indexOf(origin) !== -1) return true;
-    if (origin.indexOf('https://script.google.com') === 0) return true;
-    if (origin.indexOf('https://script.googleusercontent.com') === 0) return true;
-    if (/^https:\/\/n-[a-z0-9]+-script\.googleusercontent\.com$/i.test(origin)) return true;
-    return false;
-  }
-
-  function getBridgeFrame() {
-    return document.getElementById('gas-bridge-frame');
-  }
-
-  function ensureBridgeFrameLoaded(cb) {
-    var frame = getBridgeFrame();
-    if (!frame) {
-      if (cb) cb();
-      return;
-    }
-    var bridgeSrc = frame.getAttribute('data-bridge-src');
-    if (bridgeSrc && (!frame.getAttribute('src') || frame.getAttribute('src') === 'about:blank')) {
-      frame.addEventListener('load', function () { if (cb) cb(); }, { once: true });
-      frame.setAttribute('src', bridgeSrc);
-      return;
-    }
-    if (cb) cb();
-  }
-
-  function initBridgeListener() {
-    if (global.__gasBridgeListener) return;
-    global.__gasBridgeListener = true;
-    global.addEventListener('message', function (e) {
-      if (!isAllowedBridgeOrigin(e.origin)) return;
-      var msg = e.data;
-      if (!msg || msg.type !== 'gas-bridge') return;
-
-      if (msg.ready) {
-        bridgeReady = true;
-        bridgeQueue.forEach(function (fn) { fn(); });
-        bridgeQueue = [];
-        return;
-      }
-
-      if (msg.id && pending[msg.id]) {
-        var p = pending[msg.id];
-        delete pending[msg.id];
-        clearTimeout(p.timer);
-        if (msg.ok) {
-          if (p.success) p.success(msg.result);
-        } else if (p.failure) {
-          p.failure({ message: msg.error || 'Bridge error' });
-        }
-      }
-    });
-  }
-
-  function whenBridgeReady(cb) {
-    initBridgeListener();
-    if (bridgeReady) return cb();
-    bridgeQueue.push(cb);
-    var frame = getBridgeFrame();
-    var attempts = 0;
-    function pingBridge() {
-      if (bridgeReady) return;
-      attempts += 1;
-      try {
-        if (frame && frame.contentWindow) {
-          frame.contentWindow.postMessage({ type: 'gas-bridge-ping' }, '*');
-        }
-      } catch (err) {}
-      if (attempts < 30) {
-        setTimeout(pingBridge, 500);
-      }
-    }
-    if (frame) {
-      frame.addEventListener('load', pingBridge, { once: true });
-      if (frame.getAttribute('src') && frame.getAttribute('src') !== 'about:blank') {
-        pingBridge();
-      }
-    }
-  }
-
-  function needsFormPost(name, args) {
-    if (!isGitHubPagesHost()) return false;
-    if (name === 'saveProject' && args[1] && args[1].data) return true;
-    if (name === 'updateBackgroundImage' || name === 'updateLogoImage') return true;
-    return false;
+  function shouldUseFormPost(name, args) {
+    if (isGasHost() || shouldUseJsonp(name, args)) return false;
+    return true;
   }
 
   function callFormPost(functionName, args, success, failure) {
-    var cfg = getConfig();
-    var gasUrl = cfg.gasExecUrl;
+    var gasUrl = getGasExecUrl();
     if (!gasUrl) {
       if (failure) failure({ message: 'ไม่พบ URL API' });
       return;
     }
+    var hasFile = args && args.some(function (a) { return a && a.data; });
     var cbName = 'gasForm_' + Date.now() + '_' + Math.random().toString(36).slice(2);
     var timer = setTimeout(function () {
       cleanup();
-      if (failure) failure({ message: 'หมดเวลาอัปโหลด (ไฟล์ใหญ่เกินไปหรือเชื่อมต่อช้า)' });
-    }, UPLOAD_TIMEOUT_MS);
+      if (failure) failure({ message: 'หมดเวลาเชื่อมต่อเซิร์ฟเวอร์' });
+    }, hasFile ? UPLOAD_TIMEOUT_MS : REQUEST_TIMEOUT_MS);
 
     function cleanup() {
       clearTimeout(timer);
@@ -148,7 +66,7 @@
       if (res && res.ok) {
         if (success) success(res.data);
       } else if (failure) {
-        failure({ message: (res && res.error) || 'อัปโหลดไม่สำเร็จ' });
+        failure({ message: (res && res.error) || 'API error' });
       }
     };
 
@@ -178,8 +96,7 @@
   }
 
   function callJsonp(functionName, args, success, failure) {
-    var cfg = getConfig();
-    var url = cfg.gasExecUrl + '?action=' + encodeURIComponent(functionName);
+    var url = getGasExecUrl() + '?action=' + encodeURIComponent(functionName);
     if (args && args.length) {
       url += '&args=' + encodeURIComponent(JSON.stringify(args));
     }
@@ -205,44 +122,12 @@
       }
     };
 
-    script.src = url + '&callback=' + encodeURIComponent(cbName);
+    script.src = url + '&callback=' + encodeURIComponent(cbName) + '&_=' + Date.now();
     script.onerror = function () {
       cleanup();
       if (failure) failure({ message: 'โหลด API ไม่สำเร็จ' });
     };
     document.head.appendChild(script);
-  }
-
-  function callBridge(functionName, args, success, failure) {
-    ensureBridgeFrameLoaded(function () {
-    whenBridgeReady(function () {
-      var id = 'b_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-      var timer = setTimeout(function () {
-        if (!pending[id]) return;
-        delete pending[id];
-        if (failure) failure({ message: 'หมดเวลาเชื่อมต่อเซิร์ฟเวอร์' });
-      }, REQUEST_TIMEOUT_MS);
-      pending[id] = { success: success, failure: failure, timer: timer };
-      var frame = getBridgeFrame();
-      var target = frame && frame.contentWindow;
-      if (!target) {
-        clearTimeout(timer);
-        delete pending[id];
-        if (failure) failure({ message: 'GAS bridge iframe not found' });
-        return;
-      }
-      try {
-        target.postMessage(
-          { type: 'gas-bridge', id: id, function: functionName, args: args || [] },
-          '*'
-        );
-      } catch (err) {
-        clearTimeout(timer);
-        delete pending[id];
-        if (failure) failure({ message: err.message || String(err) });
-      }
-    });
-    });
   }
 
   function invokeGas(functionName, args, success, failure) {
@@ -253,18 +138,18 @@
       runner[functionName].apply(runner, args || []);
       return;
     }
-    if (needsFormPost(functionName, args)) {
-      callFormPost(functionName, args, success, failure);
-      return;
-    }
     if (shouldUseJsonp(functionName, args)) {
       callJsonp(functionName, args, success, failure);
       return;
     }
-    callBridge(functionName, args, success, failure);
+    if (shouldUseFormPost(functionName, args)) {
+      callFormPost(functionName, args, success, failure);
+      return;
+    }
+    if (failure) failure({ message: 'ไม่รองรับการเรียก ' + functionName });
   }
 
-  function createBridgeProxy() {
+  function createGasProxy() {
     var handlers = { success: null, failure: null };
     var p;
     var base = {
@@ -284,8 +169,8 @@
         }
         if (typeof prop === 'string' && prop !== 'then') {
           return function () {
-            var args = Array.prototype.slice.call(arguments);
-            invokeGas(prop, args, handlers.success, handlers.failure);
+            var a = Array.prototype.slice.call(arguments);
+            invokeGas(prop, a, handlers.success, handlers.failure);
             return p;
           };
         }
@@ -297,7 +182,6 @@
 
   global.gasRun = function () {
     if (isGasHost()) return global.google.script.run;
-    initBridgeListener();
-    return createBridgeProxy();
+    return createGasProxy();
   };
 })(typeof window !== 'undefined' ? window : this);
