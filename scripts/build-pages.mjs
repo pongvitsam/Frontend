@@ -85,12 +85,21 @@ const gasClient = fs.readFileSync(path.join(__dirname, 'gas-client.template.js')
 fs.writeFileSync(path.join(docsDir, 'gas-client.js'), gasClient);
 fs.writeFileSync(path.join(docsDir, 'app.js'), appJs + '\n');
 
+const faviconSrc = path.join(root, 'assets', 'favicon.svg');
+if (fs.existsSync(faviconSrc)) {
+  fs.copyFileSync(faviconSrc, path.join(docsDir, 'favicon.svg'));
+}
+
+const faviconTags = `<link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="shortcut icon" href="favicon.svg">`;
+
 const pagesIndex = `<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>กองบริการธุรกิจจัดการพลังงาน</title>
+  ${faviconTags}
   ${themeScript}
 ${instantBoot}
   <link rel="stylesheet" href="styles.css?v=${ASSET_V}">
@@ -114,6 +123,7 @@ const gasIndex = `<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <title>กองบริการธุรกิจจัดการพลังงาน</title>
+  <link rel="icon" href="${PAGES_BASE}/favicon.svg" type="image/svg+xml">
   ${themeScript}
 ${instantBoot}
   <?!= include('Styles'); ?>

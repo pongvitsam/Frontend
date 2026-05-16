@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>กองบริการธุรกิจจัดการพลังงาน</title>
+  <link rel="icon" href="https://pongvitsam.github.io/Frontend/favicon.svg" type="image/svg+xml">
   <script>
     if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       document.documentElement.classList.add('dark');
@@ -38,6 +39,9 @@
         try {
           localStorage.setItem(LS_KEY, JSON.stringify({ t: Date.now(), data: res.data }));
         } catch (e) {}
+        try {
+          window.dispatchEvent(new CustomEvent('pk2-prefetch-ready', { detail: res.data }));
+        } catch (e2) {}
       }
     };
     var s = document.createElement('script');

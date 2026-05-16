@@ -2,6 +2,7 @@ const CACHE = 'frontend-v10';
 const ASSETS = [
   './',
   './index.html',
+  './favicon.svg',
   './styles.css?v=10',
   './config.js?v=10',
   './gas-client.js?v=10',
