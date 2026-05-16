@@ -74,6 +74,12 @@ let appData = [];
     var SESSION_CACHE_MS = 8 * 60 * 1000;
     var LOCAL_CACHE_KEY = 'pk2_initial_ls_v1';
     var LOCAL_CACHE_MS = 24 * 60 * 60 * 1000;
+    var GAS_EXEC_FALLBACK = 'https://script.google.com/macros/s/AKfycby8V8L2CRZINAgkEcqfwjduA8w_7Yrl9t5AoQmISqtzq9BsghYbVjKOlZHvMuZdVUsagw/exec';
+    var bootFinished = false;
+
+    window.addEventListener('pk2-prefetch-ready', function (ev) {
+      if (ev.detail && ev.detail.apps) window.__PK2_PENDING_DATA__ = ev.detail;
+    });
 
     function invalidateSessionCache() {
       try { sessionStorage.removeItem(SESSION_CACHE_KEY); } catch (e) {}
@@ -165,19 +171,24 @@ let appData = [];
       }).catch(function () {});
     }
 
-    function fetchInitialDataJsonp(success, failure) {
+    function getGasExecUrl() {
       var cfg = window.APP_CONFIG || {};
-      var gasUrl = cfg.gasExecUrl;
-      if (!gasUrl) {
-        if (failure) failure({ message: 'ไม่พบ URL API' });
-        return;
-      }
-      var cbName = 'gasInit_' + Date.now();
+      return cfg.gasExecUrl || GAS_EXEC_FALLBACK;
+    }
+
+    function setLoadingMessage(text) {
+      var el = document.getElementById('loading-message');
+      if (el) el.textContent = text;
+    }
+
+    function fetchInitialDataJsonp(success, failure) {
+      var gasUrl = getGasExecUrl();
+      var cbName = 'gasInit_' + Date.now() + '_' + Math.random().toString(36).slice(2);
       var script = document.createElement('script');
       var timer = setTimeout(function () {
         cleanup();
         if (failure) failure({ message: 'หมดเวลาเชื่อมต่อเซิร์ฟเวอร์' });
-      }, 20000);
+      }, 10000);
 
       function cleanup() {
         clearTimeout(timer);
@@ -198,8 +209,37 @@ let appData = [];
         cleanup();
         if (failure) failure({ message: 'โหลด API ไม่สำเร็จ' });
       };
-      script.src = gasUrl + '?action=getInitialData&callback=' + encodeURIComponent(cbName);
+      script.src = gasUrl + '?action=getInitialData&callback=' + encodeURIComponent(cbName) + '&_=' + Date.now();
       document.head.appendChild(script);
+    }
+
+    function tryStaleCacheFallback() {
+      try {
+        var raw = sessionStorage.getItem(SESSION_CACHE_KEY) || localStorage.getItem(LOCAL_CACHE_KEY);
+        if (!raw) return false;
+        var o = JSON.parse(raw);
+        if (!o || !o.data || !Array.isArray(o.data.apps)) return false;
+        initApp(o.data, { fromCache: true, silent: true });
+        setLoadingMessage('แสดงข้อมูลที่บันทึกไว้ (ออฟไลน์) — กำลังอัปเดต...');
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function fetchInitialWithRetry(success, failure, attempt) {
+      attempt = attempt || 0;
+      setLoadingMessage(attempt > 0 ? 'กำลังลองเชื่อมต่ออีกครั้ง (' + (attempt + 1) + '/4)...' : 'กำลังเชื่อมต่อข้อมูล...');
+      fetchInitialDataJsonp(
+        success,
+        function (err) {
+          if (attempt < 3) {
+            setTimeout(function () { fetchInitialWithRetry(success, failure, attempt + 1); }, 1200);
+          } else if (failure) {
+            failure(err);
+          }
+        }
+      );
     }
 
     function loadInitialData(success, failure) {
@@ -222,20 +262,66 @@ let appData = [];
       }).getInitialData();
     }
 
-    function waitForPrefetchThenLoad(success, failure, attempt) {
-      attempt = attempt || 0;
-      if (window.__PREFETCH_DATA__ && window.__PREFETCH_DATA__.apps) {
-        success(window.__PREFETCH_DATA__);
-        return;
-      }
-      if (attempt >= 20) {
-        loadInitialData(success, failure);
-        return;
-      }
-      setTimeout(function () {
-        waitForPrefetchThenLoad(success, failure, attempt + 1);
-      }, 150);
+    function registerServiceWorkerDeferred() {
+      if (!('serviceWorker' in navigator)) return;
+      navigator.serviceWorker.register('sw.js').catch(function () {});
     }
+
+    function startApplicationBoot() {
+      if (bootFinished) return;
+      var pending = window.__PK2_PENDING_DATA__ || window.__PREFETCH_DATA__ || window.__BOOT_DATA__;
+      if (pending && pending.apps) {
+        bootFinished = true;
+        initApp(pending, { fromCache: true });
+        registerServiceWorkerDeferred();
+        refreshDataInBackground();
+        return;
+      }
+      if (tryHydrateFromCache()) {
+        bootFinished = true;
+        registerServiceWorkerDeferred();
+        refreshDataInBackground();
+        return;
+      }
+      var retryBtnTimer = setTimeout(function () {
+        var btn = document.getElementById('btn-retry-load');
+        if (btn) btn.classList.remove('hidden');
+      }, 5000);
+      fetchInitialWithRetry(
+        function (data) {
+          clearTimeout(retryBtnTimer);
+          bootFinished = true;
+          initApp(data, { fromCache: false });
+          registerServiceWorkerDeferred();
+        },
+        function (err) {
+          clearTimeout(retryBtnTimer);
+          console.error(err);
+          if (!tryStaleCacheFallback()) {
+            showLoadError('โหลดข้อมูลไม่สำเร็จ — กดปุ่มด้านล่างหรือ Ctrl+Shift+R');
+            var btn = document.getElementById('btn-retry-load');
+            if (btn) btn.classList.remove('hidden');
+          } else {
+            bootFinished = true;
+            registerServiceWorkerDeferred();
+            refreshDataInBackground();
+          }
+        }
+      );
+    }
+
+    function retryLoadData() {
+      bootFinished = false;
+      var btn = document.getElementById('btn-retry-load');
+      if (btn) btn.classList.add('hidden');
+      var loading = document.getElementById('loading-state');
+      var main = document.getElementById('main-content');
+      if (loading) loading.classList.remove('hidden');
+      if (main) main.classList.add('hidden');
+      setLoadingMessage('กำลังเชื่อมต่อข้อมูล...');
+      startApplicationBoot();
+    }
+    window.retryLoadData = retryLoadData;
 
     var SORT_LABELS = { popular: 'เรียงตามความนิยม', az: 'เรียงตามตัวอักษร (A-Z)' };
 
@@ -283,41 +369,7 @@ let appData = [];
       if (expectedV && localStorage.getItem('pk2_asset_v') !== expectedV) {
         purgeStaleCachesAsync(expectedV);
       }
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').catch(function () {});
-      }
-      var hadCache = tryHydrateFromCache();
-      if (hadCache) {
-        refreshDataInBackground();
-        return;
-      }
-      var loadTimer = setTimeout(function() {
-        var el = document.getElementById('loading-state');
-        var main = document.getElementById('main-content');
-        if (el && main && main.classList.contains('hidden')) {
-          el.innerHTML = '<p class="text-center text-red-500 px-4">โหลดข้อมูลไม่สำเร็จ โปรดรีเฟรชหน้า</p>';
-        }
-      }, 25000);
-      window.addEventListener('pk2-prefetch-ready', function (ev) {
-        var main = document.getElementById('main-content');
-        if (main && !main.classList.contains('hidden')) return;
-        if (ev.detail && ev.detail.apps) {
-          clearTimeout(loadTimer);
-          initApp(ev.detail, { fromCache: false });
-        }
-      });
-
-      waitForPrefetchThenLoad(
-        function (data) {
-          clearTimeout(loadTimer);
-          initApp(data, { fromCache: false });
-        },
-        function (err) {
-          clearTimeout(loadTimer);
-          console.error(err);
-          showLoadError('โหลดข้อมูลไม่สำเร็จ โปรดรีเฟรชหน้า (Ctrl+Shift+R)');
-        }
-      );
+      startApplicationBoot();
     });
 
     // ฟังก์ชันสลับโหมด มืด/สว่าง
@@ -376,8 +428,13 @@ let appData = [];
     }
 
     function showLoadError(msg) {
-      var el = document.getElementById('loading-state');
-      if (el) el.innerHTML = '<p class="text-center text-red-500 px-4">' + msg + '</p>';
+      var el = document.getElementById('loading-message');
+      if (el) {
+        el.className = 'text-center text-red-500 px-4 text-sm';
+        el.textContent = msg;
+      }
+      var spin = document.querySelector('#loading-state .animate-spin');
+      if (spin) spin.classList.add('hidden');
     }
 
     function renderBanner() {

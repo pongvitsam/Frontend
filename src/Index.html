@@ -47,7 +47,12 @@
     var s = document.createElement('script');
     s.id = 'gas-prefetch';
     s.async = true;
-    s.src = GAS_API + '?action=getInitialData&callback=' + encodeURIComponent(cb);
+    s.onerror = function () {
+      try { delete window[cb]; } catch (e) {}
+      var el = document.getElementById('gas-prefetch');
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+    };
+    s.src = GAS_API + '?action=getInitialData&callback=' + encodeURIComponent(cb) + '&_=' + Date.now();
     document.head.appendChild(s);
   })();
   </script>
@@ -88,7 +93,8 @@
 
   <div id="loading-state" class="flex flex-col items-center justify-center py-20 flex-grow">
     <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2c3548] dark:border-[#c9b896] mb-4"></div>
-    <p class="text-[#6b7885] dark:text-[#b8c0c8] font-light">กำลังเชื่อมต่อข้อมูล...</p>
+    <p id="loading-message" class="text-[#6b7885] dark:text-[#b8c0c8] font-light">กำลังเชื่อมต่อข้อมูล...</p>
+    <button type="button" id="btn-retry-load" class="hidden mt-6 btn-lux-primary px-6 py-2 rounded-full text-sm" onclick="retryLoadData()">ลองโหลดอีกครั้ง</button>
   </div>
 
   <main id="main-content" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-grow w-full">

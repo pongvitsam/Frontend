@@ -49,12 +49,17 @@
     var s = document.createElement('script');
     s.id = 'gas-prefetch';
     s.async = true;
-    s.src = GAS_API + '?action=getInitialData&callback=' + encodeURIComponent(cb);
+    s.onerror = function () {
+      try { delete window[cb]; } catch (e) {}
+      var el = document.getElementById('gas-prefetch');
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+    };
+    s.src = GAS_API + '?action=getInitialData&callback=' + encodeURIComponent(cb) + '&_=' + Date.now();
     document.head.appendChild(s);
   })();
   </script>
 
-  <link rel="stylesheet" href="styles.css?v=11">
+  <link rel="stylesheet" href="styles.css?v=12">
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -90,7 +95,8 @@
 
   <div id="loading-state" class="flex flex-col items-center justify-center py-20 flex-grow">
     <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2c3548] dark:border-[#c9b896] mb-4"></div>
-    <p class="text-[#6b7885] dark:text-[#b8c0c8] font-light">กำลังเชื่อมต่อข้อมูล...</p>
+    <p id="loading-message" class="text-[#6b7885] dark:text-[#b8c0c8] font-light">กำลังเชื่อมต่อข้อมูล...</p>
+    <button type="button" id="btn-retry-load" class="hidden mt-6 btn-lux-primary px-6 py-2 rounded-full text-sm" onclick="retryLoadData()">ลองโหลดอีกครั้ง</button>
   </div>
 
   <main id="main-content" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-grow w-full">
@@ -251,10 +257,10 @@
       </div>
     </div>
   </div>
-  <script src="config.js?v=11"></script>
-  <script src="gas-client.js?v=11"></script>
-  <iframe id="gas-bridge-frame" data-bridge-src="https://script.google.com/macros/s/AKfycby8V8L2CRZINAgkEcqfwjduA8w_7Yrl9t5AoQmISqtzq9BsghYbVjKOlZHvMuZdVUsagw/exec?page=bridge" src="https://script.google.com/macros/s/AKfycby8V8L2CRZINAgkEcqfwjduA8w_7Yrl9t5AoQmISqtzq9BsghYbVjKOlZHvMuZdVUsagw/exec?page=bridge" style="position:absolute;width:0;height:0;border:0;visibility:hidden" title="GAS Bridge"></iframe>
+  <script src="config.js?v=12"></script>
+  <script src="gas-client.js?v=12"></script>
+  <iframe id="gas-bridge-frame" data-bridge-src="https://script.google.com/macros/s/AKfycby8V8L2CRZINAgkEcqfwjduA8w_7Yrl9t5AoQmISqtzq9BsghYbVjKOlZHvMuZdVUsagw/exec?page=bridge" src="about:blank" style="position:absolute;width:0;height:0;border:0;visibility:hidden" title="GAS Bridge"></iframe>
   <iframe id="gas-form-frame" name="gas-form-frame" style="position:absolute;width:0;height:0;border:0;visibility:hidden" title="GAS Upload"></iframe>
-  <script src="app.js?v=11"></script>
+  <script src="app.js?v=12"></script>
 </body>
 </html>
