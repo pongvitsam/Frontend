@@ -8,7 +8,10 @@ let appData = [];
     let globalBannerVisible = false;
 
     let cropper = null;
-    let croppedFileData = null; 
+    let croppedFileData = null;
+    let dragAppId = null;
+    let reorderSaveTimer = null;
+    let reorderSaving = false;
 
     function loadScriptOnce(src) {
       return new Promise((resolve, reject) => {
@@ -351,7 +354,11 @@ let appData = [];
     }
     window.retryLoadData = retryLoadData;
 
-    var SORT_LABELS = { popular: 'เรียงตามความนิยม', az: 'เรียงตามตัวอักษร (A-Z)' };
+    var SORT_LABELS = {
+      order: 'ลำดับความสำคัญ',
+      popular: 'เรียงตามความนิยม',
+      az: 'เรียงตามตัวอักษร (A-Z)',
+    };
 
     function initSortDropdown() {
       var toggle = document.getElementById('sort-toggle');
@@ -504,48 +511,153 @@ let appData = [];
         .updateBanner(text, isVisible);
     }
 
+    function sortAppsForDisplay(apps, sortType) {
+      var list = apps.slice();
+      if (sortType === 'popular') {
+        list.sort(function (a, b) { return (b.clicks || 0) - (a.clicks || 0); });
+      } else if (sortType === 'az') {
+        list.sort(function (a, b) { return String(a.name).localeCompare(String(b.name), 'th'); });
+      } else {
+        list.sort(function (a, b) { return (a.sortOrder || 0) - (b.sortOrder || 0); });
+      }
+      return list;
+    }
+
+    function updateReorderHint(sortType) {
+      var hint = document.getElementById('reorder-hint');
+      var main = document.getElementById('main-content');
+      if (!hint) return;
+      var show = isAdmin && sortType === 'order' && main && !main.classList.contains('hidden');
+      hint.classList.toggle('hidden', !show);
+    }
+
+    function moveAppInOrder(dragId, dropId) {
+      var from = appData.findIndex(function (a) { return String(a.id) === String(dragId); });
+      var to = appData.findIndex(function (a) { return String(a.id) === String(dropId); });
+      if (from < 0 || to < 0 || from === to) return;
+      var item = appData.splice(from, 1)[0];
+      appData.splice(to, 0, item);
+      appData.forEach(function (a, i) { a.sortOrder = i + 1; });
+    }
+
+    function scheduleReorderSave() {
+      if (reorderSaveTimer) clearTimeout(reorderSaveTimer);
+      reorderSaveTimer = setTimeout(function () {
+        reorderSaveTimer = null;
+        if (reorderSaving) return;
+        reorderSaving = true;
+        var orderedIds = appData.map(function (a) { return a.id; });
+        gasRun()
+          .reorderApps(orderedIds)
+          .withSuccessHandler(function (apps) {
+            reorderSaving = false;
+            appData = apps || appData;
+          })
+          .withFailureHandler(function (err) {
+            reorderSaving = false;
+            handleApiError(err, 'บันทึกลำดับไม่สำเร็จ');
+          });
+      }, 450);
+    }
+
+    function initAppDragDrop(grid, sortType) {
+      if (!isAdmin || sortType !== 'order') return;
+      grid.querySelectorAll('.lux-app-card[data-app-id]').forEach(function (card) {
+        card.addEventListener('dragstart', function (e) {
+          dragAppId = card.getAttribute('data-app-id');
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', dragAppId);
+          card.classList.add('lux-app-card--dragging');
+        });
+        card.addEventListener('dragend', function () {
+          card.classList.remove('lux-app-card--dragging');
+          grid.querySelectorAll('.lux-app-card--drag-over').forEach(function (el) {
+            el.classList.remove('lux-app-card--drag-over');
+          });
+          dragAppId = null;
+        });
+        card.addEventListener('dragover', function (e) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          var target = e.currentTarget;
+          if (!dragAppId || target.getAttribute('data-app-id') === dragAppId) return;
+          grid.querySelectorAll('.lux-app-card--drag-over').forEach(function (el) {
+            if (el !== target) el.classList.remove('lux-app-card--drag-over');
+          });
+          target.classList.add('lux-app-card--drag-over');
+        });
+        card.addEventListener('dragleave', function (e) {
+          if (!e.currentTarget.contains(e.relatedTarget)) {
+            e.currentTarget.classList.remove('lux-app-card--drag-over');
+          }
+        });
+        card.addEventListener('drop', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          var dropId = card.getAttribute('data-app-id');
+          card.classList.remove('lux-app-card--drag-over');
+          if (!dragAppId || !dropId || dragAppId === dropId) return;
+          moveAppInOrder(dragAppId, dropId);
+          dragAppId = null;
+          renderApps();
+          scheduleReorderSave();
+        });
+      });
+    }
+
     function renderApps() {
       const grid = document.getElementById('app-grid');
       if (!grid) return;
       const sortEl = document.getElementById('sort-select');
-      const sortType = sortEl ? sortEl.value : 'popular';
-      let sortedApps = [...appData];
-      
-      if(sortType === 'popular') sortedApps.sort((a, b) => b.clicks - a.clicks);
-      else sortedApps.sort((a, b) => a.name.localeCompare(b.name));
+      const sortType = sortEl ? sortEl.value : 'order';
+      const sortedApps = sortAppsForDisplay(appData, sortType);
+      const canDrag = isAdmin && sortType === 'order';
+
+      updateReorderHint(sortType);
 
       var cardsHtml = '';
-      sortedApps.forEach(app => {
+      sortedApps.forEach(function (app) {
         const isReady = app.status === 'พร้อมใช้งาน';
         const cardClass = isReady ? 'lux-app-card--active' : 'lux-app-card--disabled';
         const badgeClass = isReady ? 'app-card-badge app-card-badge--ready' : 'app-card-badge app-card-badge--wait';
         const imgUrl = thumbUrl(app.imageUrl);
+        const sortableClass = canDrag ? ' lux-app-card--sortable' : '';
+        const dragAttrs = canDrag ? ' data-app-id="' + escHtml(String(app.id)) + '" draggable="true"' : '';
+        const dragHandle = canDrag
+          ? '<button type="button" class="app-drag-handle" title="ลากเพื่อจัดลำดับ" onclick="event.stopPropagation();"><i class="fa-solid fa-grip-vertical"></i></button>'
+          : '';
 
-        const adminControls = isAdmin 
-          ? `<div class="flex items-center gap-3">
-               <span class="text-xs text-[#8a96a3] dark:text-[#b8c0c8] bg-[#f5f3ee] dark:bg-[#121820] px-2.5 py-1 rounded-full transition-colors"><i class="fa-solid fa-chart-simple mr-1"></i> ${app.clicks}</span>
-               <button onclick="event.stopPropagation(); editApp('${escJs(app.id)}')" class="text-[#2c3548] hover:text-[#8b7355] transition" title="แก้ไข"><i class="fa-solid fa-pen-to-square text-lg"></i></button>
-               <button onclick="event.stopPropagation(); deleteApp('${escJs(app.id)}')" class="text-[#9a7b6a] hover:text-[#7d5e52] transition" title="ลบ"><i class="fa-solid fa-trash text-lg"></i></button>
-             </div>` : ``;
+        const adminControls = isAdmin
+          ? '<div class="flex items-center gap-3">' +
+              '<span class="text-xs text-[#8a96a3] dark:text-[#b8c0c8] bg-[#f5f3ee] dark:bg-[#121820] px-2.5 py-1 rounded-full transition-colors"><i class="fa-solid fa-chart-simple mr-1"></i> ' + app.clicks + '</span>' +
+              '<button type="button" onclick="event.stopPropagation(); editApp(\'' + escJs(app.id) + '\')" class="text-[#2c3548] hover:text-[#8b7355] transition" title="แก้ไข"><i class="fa-solid fa-pen-to-square text-lg"></i></button>' +
+              '<button type="button" onclick="event.stopPropagation(); deleteApp(\'' + escJs(app.id) + '\')" class="text-[#9a7b6a] hover:text-[#7d5e52] transition" title="ลบ"><i class="fa-solid fa-trash text-lg"></i></button>' +
+            '</div>'
+          : '';
+        const clickHandler = canDrag
+          ? ''
+          : ' onclick="openApp(\'' + escJs(app.id) + '\', \'' + escJs(app.name) + '\', \'' + escJs(app.url) + '\', ' + isReady + ')"';
 
-        cardsHtml += `
-          <div class="lux-app-card ${cardClass}" onclick="openApp('${escJs(app.id)}', '${escJs(app.name)}', '${escJs(app.url)}', ${isReady})">
-            <article class="app-card-shell">
-              <div class="app-card-visual">
-                <img class="app-card-thumb" src="${escHtml(imgUrl)}" alt="${escHtml(app.name)}" width="128" height="128" loading="lazy" decoding="async" fetchpriority="low" />
-              </div>
-              <div class="app-card-body">
-                <h3 class="app-card-title">${escHtml(app.name)}</h3>
-                <span class="${badgeClass}">${escHtml(app.status)}</span>
-                <div class="app-card-footer">
-                  <div class="app-card-action"><i class="fa-solid fa-arrow-up-right-from-square"></i></div>
-                  ${adminControls}
-                </div>
-              </div>
-            </article>
-          </div>`;
+        cardsHtml +=
+          '<div class="lux-app-card ' + cardClass + sortableClass + '"' + dragAttrs + clickHandler + '>' +
+            dragHandle +
+            '<article class="app-card-shell">' +
+              '<div class="app-card-visual">' +
+                '<img class="app-card-thumb" src="' + escHtml(imgUrl) + '" alt="' + escHtml(app.name) + '" width="128" height="128" loading="lazy" decoding="async" fetchpriority="low" />' +
+              '</div>' +
+              '<div class="app-card-body">' +
+                '<h3 class="app-card-title">' + escHtml(app.name) + '</h3>' +
+                '<span class="' + badgeClass + '">' + escHtml(app.status) + '</span>' +
+                '<div class="app-card-footer">' +
+                  '<div class="app-card-action" role="button" tabindex="0" onclick="event.stopPropagation(); openApp(\'' + escJs(app.id) + '\', \'' + escJs(app.name) + '\', \'' + escJs(app.url) + '\', ' + isReady + ')"><i class="fa-solid fa-arrow-up-right-from-square"></i></div>' +
+                  adminControls +
+                '</div>' +
+              '</div>' +
+            '</article>' +
+          '</div>';
       });
       grid.innerHTML = cardsHtml;
+      initAppDragDrop(grid, sortType);
     }
 
     function openApp(id, name, url, isReady) {

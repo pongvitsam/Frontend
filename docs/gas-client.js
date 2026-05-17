@@ -9,6 +9,7 @@
     recordClick: 2,
     updateBanner: 2,
     deleteProject: 1,
+    reorderApps: 1,
     saveProject: 2,
     setSettingImage: 2,
   };

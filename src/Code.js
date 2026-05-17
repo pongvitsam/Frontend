@@ -77,6 +77,8 @@ function invokeApiAction_(action, args) {
       return updateBanner(args[0], args[1]);
     case 'deleteProject':
       return deleteProject(args[0]);
+    case 'reorderApps':
+      return reorderApps(args[0]);
     case 'uploadImage':
       return uploadImage(args[0]);
     case 'saveProject':
@@ -267,21 +269,67 @@ function updateBanner(text, isVisible) {
   return true;
 }
 
+function mapAppRow_(row, index) {
+  return {
+    id: row[0],
+    name: row[1],
+    url: row[2],
+    imageUrl: row[3],
+    status: row[4],
+    clicks: row[5] || 0,
+    sortOrder: row[6] !== '' && row[6] != null ? Number(row[6]) : (index + 1) * 10,
+  };
+}
+
+function sortAppsByOrder_(apps) {
+  return apps.slice().sort(function (a, b) {
+    return (a.sortOrder || 0) - (b.sortOrder || 0);
+  });
+}
+
 function getApps() {
   const cache = CacheService.getScriptCache();
   const cached = cache.get(CACHE_KEY_APPS);
   if (cached) {
-    try { return JSON.parse(cached); } catch (e) {}
+    try {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed) && parsed.length && parsed[0].sortOrder != null) {
+        return sortAppsByOrder_(parsed);
+      }
+    } catch (e) {}
   }
   const sheet = getSpreadsheet_().getSheetByName('Apps');
   const lastRow = Math.max(sheet.getLastRow(), 1);
-  const data = sheet.getRange(1, 1, lastRow, 6).getValues();
+  const colCount = Math.max(sheet.getLastColumn(), 7);
+  const data = sheet.getRange(1, 1, lastRow, colCount).getValues();
   data.shift();
-  const apps = data.map(row => ({
-    id: row[0], name: row[1], url: row[2], imageUrl: row[3], status: row[4], clicks: row[5] || 0
-  }));
-  cache.put(CACHE_KEY_APPS, JSON.stringify(apps), CACHE_TTL_APPS_SEC);
-  return apps;
+  const apps = data.map(function (row, i) { return mapAppRow_(row, i); });
+  const sorted = sortAppsByOrder_(apps);
+  cache.put(CACHE_KEY_APPS, JSON.stringify(sorted), CACHE_TTL_APPS_SEC);
+  return sorted;
+}
+
+function reorderApps(orderedIds) {
+  orderedIds = orderedIds || [];
+  const sheet = getSpreadsheet_().getSheetByName('Apps');
+  const lastRow = Math.max(sheet.getLastRow(), 1);
+  if (lastRow < 2 || !orderedIds.length) return getApps();
+
+  if (sheet.getLastColumn() < 7) {
+    sheet.getRange(1, 7).setValue('sortOrder');
+  }
+
+  for (let i = 0; i < orderedIds.length; i++) {
+    const finder = sheet.getRange(2, 1, lastRow - 1, 1)
+      .createTextFinder(String(orderedIds[i])).matchEntireCell(true);
+    const hit = finder.findNext();
+    if (hit) sheet.getRange(hit.getRow(), 7).setValue(i + 1);
+  }
+
+  const cache = CacheService.getScriptCache();
+  cache.remove(CACHE_KEY_APPS);
+  cache.remove(CACHE_KEY_INITIAL);
+  return getApps();
 }
 
 function hashPassword(password) {
@@ -400,7 +448,14 @@ function saveProject(projectData, fileData) {
     }
   } else {
     const newId = new Date().getTime();
-    sheet.appendRow([newId, projectData.name, projectData.url, imageUrl, projectData.status, 0]);
+    let nextOrder = 10;
+    if (apps && apps.length) {
+      apps.forEach(function (a) {
+        if ((a.sortOrder || 0) >= nextOrder) nextOrder = a.sortOrder + 10;
+      });
+    }
+    if (sheet.getLastColumn() < 7) sheet.getRange(1, 7).setValue('sortOrder');
+    sheet.appendRow([newId, projectData.name, projectData.url, imageUrl, projectData.status, 0, nextOrder]);
     if (apps) {
       apps.push({
         id: newId,
@@ -409,12 +464,13 @@ function saveProject(projectData, fileData) {
         imageUrl: imageUrl,
         status: projectData.status,
         clicks: 0,
+        sortOrder: nextOrder,
       });
     }
   }
 
   if (!apps) apps = getApps();
-  else cache.put(CACHE_KEY_APPS, JSON.stringify(apps), CACHE_TTL_APPS_SEC);
+  else cache.put(CACHE_KEY_APPS, JSON.stringify(sortAppsByOrder_(apps)), CACHE_TTL_APPS_SEC);
   cache.remove(CACHE_KEY_INITIAL);
   cache.remove(CACHE_KEY_ADMIN);
   return apps;

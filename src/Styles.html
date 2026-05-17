@@ -74,6 +74,15 @@ select:not([type=checkbox]){color:#2c3542}
 .lux-app-card--active:hover .app-card-shell{transform:translateY(-8px) scale(1.03);box-shadow:0 28px 56px -14px rgba(44,53,72,.28),0 0 48px -10px rgba(139,115,85,.28)}
 .lux-app-card--disabled .app-card-shell{opacity:.7}
 .lux-app-card--disabled .app-card-thumb{filter:grayscale(1) saturate(.4)}
+.lux-app-card--sortable{cursor:grab}
+.lux-app-card--sortable .app-card-shell{cursor:grab}
+.lux-app-card--dragging{opacity:.55;cursor:grabbing}
+.lux-app-card--drag-over .app-card-shell{outline:2px dashed #8b7355;outline-offset:4px}
+.app-drag-handle{position:absolute;top:.65rem;left:.65rem;z-index:5;width:2rem;height:2rem;border-radius:.75rem;border:1px solid rgba(44,53,72,.12);background:rgba(255,255,255,.92);color:#6b7885;display:flex;align-items:center;justify-content:center;cursor:grab;box-shadow:0 4px 12px -4px rgba(44,53,72,.25)}
+.dark .app-drag-handle{background:rgba(26,32,41,.92);border-color:rgba(255,255,255,.1);color:#b8c0c8}
+.app-drag-handle:active{cursor:grabbing}
+.reorder-hint{display:flex;align-items:center;justify-content:center;padding:.75rem 1rem;border-radius:1rem;background:rgba(139,115,85,.12);color:#5c4f3d;border:1px dashed rgba(139,115,85,.35)}
+.dark .reorder-hint{color:#c9b896;background:rgba(139,115,85,.15);border-color:rgba(201,184,150,.25)}
 .app-card-visual{position:relative;width:76%;max-width:7.75rem;aspect-ratio:1;margin:0 auto 1.1rem;flex-shrink:0}
 .app-card-visual::after{content:"";position:absolute;inset:-12px;border-radius:50%;background:radial-gradient(circle,rgba(139,115,85,.22),transparent 70%);opacity:0;transition:opacity .35s;z-index:0}
 .lux-app-card--active:hover .app-card-visual::after{opacity:1}

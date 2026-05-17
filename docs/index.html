@@ -59,7 +59,7 @@
   })();
   </script>
 
-  <link rel="stylesheet" href="styles.css?v=24">
+  <link rel="stylesheet" href="styles.css?v=25">
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -104,13 +104,14 @@
       <h1 class="page-hero-title text-3xl font-bold tracking-tight transition-colors">คลังแอปพลิเคชัน</h1>
       <div class="flex gap-3">
         <div class="relative" id="sort-dropdown-wrap">
-          <input type="hidden" id="sort-select" value="popular">
+          <input type="hidden" id="sort-select" value="order">
           <button type="button" id="sort-toggle" class="lux-select-btn outline-none focus:ring-2 focus:ring-[#2c3548]">
-            <span id="sort-label">เรียงตามความนิยม</span>
+            <span id="sort-label">ลำดับความสำคัญ</span>
             <i class="fa-solid fa-chevron-down text-xs opacity-70 ml-2"></i>
           </button>
           <div id="sort-menu" class="sort-menu hidden absolute right-0 z-50 mt-2 min-w-[220px] py-1 shadow-lg">
-            <button type="button" data-sort="popular" class="sort-opt sort-opt-active">เรียงตามความนิยม</button>
+            <button type="button" data-sort="order" class="sort-opt sort-opt-active">ลำดับความสำคัญ</button>
+            <button type="button" data-sort="popular" class="sort-opt">เรียงตามความนิยม</button>
             <button type="button" data-sort="az" class="sort-opt">เรียงตามตัวอักษร (A-Z)</button>
           </div>
         </div>
@@ -118,6 +119,10 @@
           <i class="fa-solid fa-sliders mr-2"></i> จัดการระบบ
         </button>
       </div>
+    </div>
+    <div id="reorder-hint" class="hidden reorder-hint mb-4 w-full text-sm">
+      <i class="fa-solid fa-grip-vertical mr-2 opacity-70"></i>
+      ลากการ์ดเพื่อจัดลำดับความสำคัญ (บันทึกอัตโนมัติ)
     </div>
     <div id="app-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5"></div>
   </main>
@@ -257,10 +262,10 @@
       </div>
     </div>
   </div>
-  <script src="config.js?v=24"></script>
-  <script src="gas-client.js?v=24"></script>
+  <script src="config.js?v=25"></script>
+  <script src="gas-client.js?v=25"></script>
   <iframe id="gas-form-frame" name="gas-form-frame" style="position:absolute;width:0;height:0;border:0;visibility:hidden" title="GAS API"></iframe>
   <iframe id="gas-bridge-frame" name="gas-bridge-frame" style="position:absolute;width:0;height:0;border:0;visibility:hidden" title="GAS Bridge"></iframe>
-  <script src="app.js?v=24"></script>
+  <script src="app.js?v=25"></script>
 </body>
 </html>
