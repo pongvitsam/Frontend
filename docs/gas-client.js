@@ -10,6 +10,13 @@
     updateBanner: 2,
     deleteProject: 1,
     saveProject: 2,
+    setSettingImage: 2,
+  };
+
+  var FORM_FILE_ACTIONS = {
+    uploadImage: true,
+    updateBackgroundImage: true,
+    updateLogoImage: true,
   };
 
   function getConfig() {
@@ -31,16 +38,24 @@
     return typeof global.google !== 'undefined' && global.google.script && global.google.script.run;
   }
 
+  function hasFilePayload(args) {
+    return args && args.some(function (a) { return a && a.data; });
+  }
+
   function shouldUseJsonp(name, args) {
     if (isGasHost()) return false;
+    if (name === 'uploadImage') return false;
     if (name === 'saveProject' && args[1] && args[1].data) return false;
+    if (FORM_FILE_ACTIONS[name] && hasFilePayload(args)) return false;
     if (!Object.prototype.hasOwnProperty.call(JSONP_FUNCS, name)) return false;
     return (args || []).length === JSONP_FUNCS[name];
   }
 
   function shouldUseFormPost(name, args) {
     if (isGasHost() || shouldUseJsonp(name, args)) return false;
-    return true;
+    if (name === 'uploadImage') return true;
+    if (FORM_FILE_ACTIONS[name] && hasFilePayload(args)) return true;
+    return false;
   }
 
   function isGasFormPostOrigin(origin) {
@@ -56,7 +71,15 @@
       if (failure) failure({ message: 'ไม่พบ URL API' });
       return;
     }
-    var hasFile = args && args.some(function (a) { return a && a.data; });
+    var postArgs = (args || []).slice();
+    var filePayload = null;
+    if (functionName === 'uploadImage' && postArgs[0] && postArgs[0].data) {
+      filePayload = postArgs.shift();
+    } else if (functionName === 'saveProject' && postArgs[1] && postArgs[1].data) {
+      filePayload = postArgs[1];
+      postArgs = [postArgs[0]];
+    }
+    var hasFile = !!filePayload;
     var cbName = 'gasForm_' + Date.now() + '_' + Math.random().toString(36).slice(2);
     var timer = setTimeout(function () {
       cleanup();
@@ -107,7 +130,8 @@
     }
 
     addField('action', functionName);
-    addField('args', JSON.stringify(args || []));
+    addField('args', JSON.stringify(postArgs));
+    if (filePayload) addField('fileData', JSON.stringify(filePayload));
     addField('callback', cbName);
     document.body.appendChild(form);
     form.submit();

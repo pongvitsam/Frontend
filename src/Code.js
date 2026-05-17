@@ -77,8 +77,12 @@ function invokeApiAction_(action, args) {
       return updateBanner(args[0], args[1]);
     case 'deleteProject':
       return deleteProject(args[0]);
+    case 'uploadImage':
+      return uploadImage(args[0]);
     case 'saveProject':
       return saveProject(args[0], args[1] || null);
+    case 'setSettingImage':
+      return setSettingImage(args[0], args[1]);
     case 'updateBackgroundImage':
       return updateBackgroundImage(args[0]);
     case 'updateLogoImage':
@@ -145,6 +149,16 @@ function doPost(e) {
     }
   }
   if (!Array.isArray(args)) args = [];
+  if (params.fileData) {
+    try {
+      var filePayload = JSON.parse(params.fileData);
+      if (params.action === 'uploadImage') {
+        args = [filePayload];
+      } else if (params.action === 'saveProject' && args.length) {
+        args[1] = filePayload;
+      }
+    } catch (fileErr) {}
+  }
   var payload;
   try {
     payload = { ok: true, data: invokeApiAction_(params.action, args) };
@@ -311,34 +325,34 @@ function recordClick(appId, appName) {
   }
 }
 
+function uploadImageToDrive_(fileData, thumbSize) {
+  const folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
+  const blob = Utilities.newBlob(Utilities.base64Decode(fileData.data), fileData.mimeType, fileData.name);
+  const file = folder.createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return 'https://drive.google.com/thumbnail?id=' + file.getId() + '&sz=' + (thumbSize || 'w480');
+}
+
+function uploadImage(fileData) {
+  if (!fileData || !fileData.data) throw new Error('ไม่มีไฟล์รูปภาพ');
+  return uploadImageToDrive_(fileData, fileData.thumbSize || 'w480');
+}
+
+function setSettingImage(key, imageUrl) {
+  saveSettingValue(key, imageUrl);
+  const cache = CacheService.getScriptCache();
+  cache.remove(CACHE_KEY_INITIAL);
+  cache.remove(CACHE_KEY_SETTINGS);
+  return imageUrl;
+}
+
 // อัปโหลดรูปลง Drive และบันทึกใน Settings
 function updateSettingImage(key, fileData) {
   let imageUrl = '';
   if (fileData && fileData.data) {
-    const folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
-    const blob = Utilities.newBlob(Utilities.base64Decode(fileData.data), fileData.mimeType, fileData.name);
-    const file = folder.createFile(blob);
-    
-    // ตั้งค่าให้ทุกคนที่มีลิ้งก์สามารถดูได้
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    
-    // แก้ปัญหาภาพไม่ขึ้น: ใช้ URL แบบ Thumbnail ซึ่งเสถียรที่สุดสำหรับเว็บ
-    imageUrl = 'https://drive.google.com/thumbnail?id=' + file.getId() + '&sz=w1000';
+    imageUrl = uploadImageToDrive_(fileData, 'w800');
   }
-
-  const sheet = getSpreadsheet_().getSheetByName('Settings');
-  const lastRow = Math.max(sheet.getLastRow(), 1);
-  const data = sheet.getRange(1, 1, lastRow, 2).getValues();
-  let found = false;
-  for (let i = 0; i < data.length; i++) {
-    if (data[i][0] === key) {
-      sheet.getRange(i + 1, 2).setValue(imageUrl);
-      found = true; break;
-    }
-  }
-  if(!found) sheet.appendRow([key, imageUrl]);
-  clearAppCache(); // <--- เพิ่มคำสั่งล้างคุกกี้ตรงนี้
-  return imageUrl;
+  return setSettingImage(key, imageUrl);
 }
 
 function updateBackgroundImage(fileData) { return updateSettingImage('BackgroundImage', fileData); }
@@ -346,35 +360,64 @@ function updateLogoImage(fileData) { return updateSettingImage('LogoImage', file
 
 // เพิ่มหรือแก้ไขโปรแกรม
 function saveProject(projectData, fileData) {
-  let imageUrl = projectData.imageUrl || ''; 
+  let imageUrl = projectData.imageUrl || '';
   if (fileData && fileData.data) {
-    const folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
-    const blob = Utilities.newBlob(Utilities.base64Decode(fileData.data), fileData.mimeType, fileData.name);
-    const file = folder.createFile(blob);
-    
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    imageUrl = 'https://drive.google.com/thumbnail?id=' + file.getId() + '&sz=w1000';
+    imageUrl = uploadImageToDrive_(fileData, 'w480');
   }
 
   const sheet = getSpreadsheet_().getSheetByName('Apps');
-  const lastRow = Math.max(sheet.getLastRow(), 1);
-  const data = sheet.getRange(1, 1, lastRow, 6).getValues();
+  const cache = CacheService.getScriptCache();
+  let apps = null;
+  try {
+    const cached = cache.get(CACHE_KEY_APPS);
+    if (cached) apps = JSON.parse(cached);
+  } catch (e) {}
 
   if (projectData.id) {
-    for (let i = 1; i < data.length; i++) {
-      if (data[i][0] == projectData.id) {
-        sheet.getRange(i + 1, 2).setValue(projectData.name);
-        sheet.getRange(i + 1, 3).setValue(projectData.url);
-        if(imageUrl) sheet.getRange(i + 1, 4).setValue(imageUrl);
-        sheet.getRange(i + 1, 5).setValue(projectData.status);
-        break;
+    const lastRow = Math.max(sheet.getLastRow(), 1);
+    if (lastRow >= 2) {
+      const finder = sheet.getRange(2, 1, lastRow - 1, 1)
+        .createTextFinder(String(projectData.id)).matchEntireCell(true);
+      const hit = finder.findNext();
+      if (hit) {
+        const rowNo = hit.getRow();
+        sheet.getRange(rowNo, 2).setValue(projectData.name);
+        sheet.getRange(rowNo, 3).setValue(projectData.url);
+        if (imageUrl) sheet.getRange(rowNo, 4).setValue(imageUrl);
+        sheet.getRange(rowNo, 5).setValue(projectData.status);
+      }
+    }
+    if (apps) {
+      for (let i = 0; i < apps.length; i++) {
+        if (apps[i].id == projectData.id) {
+          apps[i].name = projectData.name;
+          apps[i].url = projectData.url;
+          apps[i].status = projectData.status;
+          if (imageUrl) apps[i].imageUrl = imageUrl;
+          break;
+        }
       }
     }
   } else {
-    sheet.appendRow([new Date().getTime(), projectData.name, projectData.url, imageUrl, projectData.status, 0]);
+    const newId = new Date().getTime();
+    sheet.appendRow([newId, projectData.name, projectData.url, imageUrl, projectData.status, 0]);
+    if (apps) {
+      apps.push({
+        id: newId,
+        name: projectData.name,
+        url: projectData.url,
+        imageUrl: imageUrl,
+        status: projectData.status,
+        clicks: 0,
+      });
+    }
   }
-  clearAppCache(); // <--- เพิ่มคำสั่งล้างคุกกี้ตรงนี้
-  return getApps();
+
+  if (!apps) apps = getApps();
+  else cache.put(CACHE_KEY_APPS, JSON.stringify(apps), CACHE_TTL_APPS_SEC);
+  cache.remove(CACHE_KEY_INITIAL);
+  cache.remove(CACHE_KEY_ADMIN);
+  return apps;
 }
 
 function getAdminDashboardData() {

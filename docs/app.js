@@ -581,19 +581,43 @@ let appData = [];
       alert((err && err.message) || 'อัปโหลดไม่สำเร็จ กรุณาลองใหม่');
     }
 
+    function uploadImageFile(fileData, onSuccess, onProgress) {
+      if (onProgress) onProgress('กำลังอัปโหลดรูป...');
+      gasRun()
+        .withSuccessHandler(onSuccess)
+        .withFailureHandler(handleUploadError)
+        .uploadImage(fileData);
+    }
+
+    function afterProjectSaved(res) {
+      invalidateSessionCache();
+      appData = res;
+      editingAppId = null;
+      croppedFileData = null;
+      restoreAdminUI();
+      loadDashboardData();
+    }
+
     function confirmCrop() {
       if (!cropper) return;
-      const canvas = cropper.getCroppedCanvas({ maxWidth: 800, maxHeight: 800 });
       const fileInput = document.getElementById('new-img-file').files.length > 0 ? document.getElementById('new-img-file') : document.getElementById('upload-file');
       const originalFile = fileInput.files[0];
-      const useJpeg = originalFile.type !== 'image/png';
-      const mime = useJpeg ? 'image/jpeg' : 'image/png';
-      const base64Url = useJpeg ? canvas.toDataURL(mime, 0.85) : canvas.toDataURL(mime);
+      const isBranding = document.getElementById('new-img-file').files.length === 0;
+      const maxSide = isBranding ? 640 : 480;
+      const quality = isBranding ? 0.82 : 0.76;
+      const canvas = cropper.getCroppedCanvas({
+        maxWidth: maxSide,
+        maxHeight: maxSide,
+        imageSmoothingQuality: 'medium',
+      });
       const baseName = (originalFile.name || 'image').replace(/\.[^.]+$/, '');
+      const mime = 'image/jpeg';
+      const base64Url = canvas.toDataURL(mime, quality);
       croppedFileData = {
         data: base64Url.split(',')[1],
         mimeType: mime,
-        name: baseName + (useJpeg ? '.jpg' : '.png'),
+        name: baseName + '.jpg',
+        thumbSize: isBranding ? 'w800' : 'w480',
       };
       document.getElementById('cropper-modal').classList.add('hidden');
       if (cropper) cropper.destroy();
@@ -649,30 +673,21 @@ let appData = [];
       if(!n || !u) return alert('กรอกชื่อและ URL');
       document.getElementById('project-modal').classList.add('hidden');
       showLoadingUI();
-      setLoadingMessage(croppedFileData ? 'กำลังอัปโหลดรูปและบันทึกโครงการ...' : 'กำลังบันทึกโครงการ...');
       const p = { id: editingAppId, name: n, url: u, status: s, imageUrl: "" };
-      
+
       if (croppedFileData) {
-        gasRun()
-          .withSuccessHandler(function (res) {
-            invalidateSessionCache();
-            appData = res;
-            editingAppId = null;
-            croppedFileData = null;
-            restoreAdminUI();
-            loadDashboardData();
-          })
-          .withFailureHandler(handleUploadError)
-          .saveProject(p, croppedFileData);
+        uploadImageFile(croppedFileData, function (imageUrl) {
+          p.imageUrl = imageUrl;
+          setLoadingMessage('กำลังบันทึกโครงการ...');
+          gasRun()
+            .withSuccessHandler(afterProjectSaved)
+            .withFailureHandler(handleUploadError)
+            .saveProject(p, null);
+        }, setLoadingMessage);
       } else {
+        setLoadingMessage('กำลังบันทึกโครงการ...');
         gasRun()
-          .withSuccessHandler(function (res) {
-            invalidateSessionCache();
-            appData = res;
-            editingAppId = null;
-            restoreAdminUI();
-            loadDashboardData();
-          })
+          .withSuccessHandler(afterProjectSaved)
           .withFailureHandler(handleUploadError)
           .saveProject(p, null);
       }
@@ -725,22 +740,16 @@ let appData = [];
       if(!croppedFileData) return alert('กรุณาเลือกไฟล์และกดยืนยันการตัดรูปภาพก่อนครับ');
       closeUploadModal();
       showLoadingUI();
-      setLoadingMessage('กำลังอัปโหลดรูป...');
-      if(uploadTarget === 'bg') {
+      const settingKey = uploadTarget === 'bg' ? 'BackgroundImage' : 'LogoImage';
+      const fileToUpload = croppedFileData;
+      uploadImageFile(fileToUpload, function (imageUrl) {
+        setLoadingMessage('กำลังบันทึกการตั้งค่า...');
         gasRun()
           .withSuccessHandler(function (url) {
             invalidateSessionCache();
-            if (url) document.body.style.backgroundImage = "url('" + url + "')";
-            croppedFileData = null;
-            restoreAdminUI();
-          })
-          .withFailureHandler(handleUploadError)
-          .updateBackgroundImage(croppedFileData);
-      } else {
-        gasRun()
-          .withSuccessHandler(function (url) {
-            invalidateSessionCache();
-            if (url) {
+            if (uploadTarget === 'bg' && url) {
+              document.body.style.backgroundImage = "url('" + url + "')";
+            } else if (url) {
               document.getElementById('site-logo').src = url;
               document.getElementById('site-logo').classList.remove('hidden');
               document.getElementById('default-logo-icon').classList.add('hidden');
@@ -749,8 +758,8 @@ let appData = [];
             restoreAdminUI();
           })
           .withFailureHandler(handleUploadError)
-          .updateLogoImage(croppedFileData);
-      }
+          .setSettingImage(settingKey, imageUrl);
+      }, setLoadingMessage);
     };
 
     function showLoadingUI() { document.getElementById('loading-state').classList.remove('hidden'); document.getElementById('admin-dashboard').classList.add('hidden'); document.getElementById('main-content').classList.add('hidden'); }
