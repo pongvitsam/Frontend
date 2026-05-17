@@ -103,7 +103,6 @@ const pagesIndex = `<!DOCTYPE html>
   ${themeScript}
 ${instantBoot}
   <link rel="stylesheet" href="styles.css?v=${ASSET_V}">
-  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
@@ -111,8 +110,6 @@ ${instantBoot}
 ${bodyHtml}
   <script src="config.js?v=${ASSET_V}"></script>
   <script src="gas-client.js?v=${ASSET_V}"></script>
-  <iframe id="gas-form-frame" name="gas-form-frame" style="position:absolute;width:0;height:0;border:0;visibility:hidden" title="GAS API"></iframe>
-  <iframe id="gas-bridge-frame" name="gas-bridge-frame" style="position:absolute;width:0;height:0;border:0;visibility:hidden" title="GAS Bridge"></iframe>
   <script src="app.js?v=${ASSET_V}"></script>
 </body>
 </html>
@@ -128,7 +125,6 @@ const gasIndex = `<!DOCTYPE html>
   ${themeScript}
 ${instantBoot}
   <?!= include('Styles'); ?>
-  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>

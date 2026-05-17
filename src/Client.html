@@ -79,6 +79,7 @@ let appData = [];
     var LOCAL_CACHE_MS = 24 * 60 * 60 * 1000;
     var GAS_EXEC_FALLBACK = 'https://script.google.com/macros/s/AKfycby8V8L2CRZINAgkEcqfwjduA8w_7Yrl9t5AoQmISqtzq9BsghYbVjKOlZHvMuZdVUsagw/exec';
     var bootFinished = false;
+    var memoryCachePayload = null;
 
     window.addEventListener('pk2-prefetch-ready', function (ev) {
       if (!ev.detail || !ev.detail.apps) return;
@@ -89,12 +90,15 @@ let appData = [];
     });
 
     function invalidateSessionCache() {
+      memoryCachePayload = null;
       try { sessionStorage.removeItem(SESSION_CACHE_KEY); } catch (e) {}
       try { localStorage.removeItem(LOCAL_CACHE_KEY); } catch (e) {}
     }
 
     function persistCache(data) {
-      var payload = JSON.stringify({ t: Date.now(), data: data });
+      var envelope = { t: Date.now(), data: data };
+      memoryCachePayload = envelope;
+      var payload = JSON.stringify(envelope);
       try { sessionStorage.setItem(SESSION_CACHE_KEY, payload); } catch (e) {}
       try { localStorage.setItem(LOCAL_CACHE_KEY, payload); } catch (e) {}
     }
@@ -106,12 +110,13 @@ let appData = [];
       if (window.__BOOT_DATA__ && window.__BOOT_DATA__.apps) {
         return { t: Date.now(), data: window.__BOOT_DATA__ };
       }
+      if (memoryCachePayload && memoryCachePayload.data) return memoryCachePayload;
       try {
         var raw = sessionStorage.getItem(SESSION_CACHE_KEY) || localStorage.getItem(LOCAL_CACHE_KEY);
         if (!raw) return null;
         return JSON.parse(raw);
       } catch (e) {
-        return null;
+        return memoryCachePayload;
       }
     }
 
@@ -634,8 +639,10 @@ let appData = [];
       updateReorderHint(sortType);
 
       var cardsHtml = '';
-      sortedApps.forEach(function (app) {
+      sortedApps.forEach(function (app, cardIndex) {
         const isReady = app.status === 'พร้อมใช้งาน';
+        const imgLoading = cardIndex < 4 ? 'eager' : 'lazy';
+        const imgPriority = cardIndex < 4 ? 'high' : 'low';
         const cardClass = isReady ? 'lux-app-card--active' : 'lux-app-card--disabled';
         const badgeClass = isReady ? 'app-card-badge app-card-badge--ready' : 'app-card-badge app-card-badge--wait';
         const imgUrl = thumbUrl(app.imageUrl);
@@ -661,7 +668,7 @@ let appData = [];
             dragHandle +
             '<article class="app-card-shell">' +
               '<div class="app-card-visual">' +
-                '<img class="app-card-thumb" src="' + escHtml(imgUrl) + '" alt="' + escHtml(app.name) + '" width="128" height="128" loading="lazy" decoding="async" fetchpriority="low" />' +
+                '<img class="app-card-thumb" src="' + escHtml(imgUrl) + '" alt="' + escHtml(app.name) + '" width="128" height="128" loading="' + imgLoading + '" decoding="async" fetchpriority="' + imgPriority + '" />' +
               '</div>' +
               '<div class="app-card-body">' +
                 '<h3 class="app-card-title">' + escHtml(app.name) + '</h3>' +

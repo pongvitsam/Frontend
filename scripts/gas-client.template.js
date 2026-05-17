@@ -83,6 +83,19 @@
     return false;
   }
 
+  function ensureFormFrame() {
+    var frame = global.document.getElementById('gas-form-frame');
+    if (!frame) {
+      frame = global.document.createElement('iframe');
+      frame.id = 'gas-form-frame';
+      frame.name = 'gas-form-frame';
+      frame.title = 'GAS API';
+      frame.setAttribute('style', 'position:absolute;width:0;height:0;border:0;visibility:hidden');
+      global.document.body.appendChild(frame);
+    }
+    return frame;
+  }
+
   function ensureBridgeFrame() {
     var frame = global.document.getElementById('gas-bridge-frame');
     if (!frame) {
@@ -220,6 +233,8 @@
       global[cbName](msg.response);
     };
     global.addEventListener('message', messageHandler);
+
+    ensureFormFrame();
 
     var form = global.document.createElement('form');
     form.method = 'POST';
