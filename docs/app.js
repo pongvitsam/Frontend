@@ -116,6 +116,27 @@ let appData = [];
       return url;
     }
 
+    function escHtml(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function escJs(value) {
+      return String(value == null ? '' : value)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/\r/g, '')
+        .replace(/\n/g, '\\n');
+    }
+
+    function handleApiError(err, msg) {
+      restoreAdminUI();
+      alert((err && err.message) || msg || 'เกิดข้อผิดพลาด กรุณาลองใหม่');
+    }
+
     function tryHydrateFromCache() {
       var o = readCachedPayload();
       if (!o || !o.data || !Array.isArray(o.data.apps)) return false;
@@ -450,7 +471,7 @@ let appData = [];
       const textDisplay = document.getElementById('banner-text-display');
       
       if (globalBannerVisible && globalBannerText.trim() !== '') {
-        textDisplay.innerHTML = globalBannerText.replace(/\n/g, ' &nbsp;&nbsp;&nbsp; ');
+        textDisplay.textContent = globalBannerText.replace(/\s+/g, ' ');
         banner.classList.remove('hidden');
       } else {
         banner.classList.add('hidden');
@@ -471,13 +492,16 @@ let appData = [];
       const isVisible = document.getElementById('edit-banner-visible').checked;
       document.getElementById('banner-modal').classList.add('hidden');
       showLoadingUI(); 
-      gasRun().withSuccessHandler(function() {
-        invalidateSessionCache();
-        globalBannerText = text;
-        globalBannerVisible = isVisible;
-        renderBanner(); 
-        restoreAdminUI();
-      }).updateBanner(text, isVisible);
+      gasRun()
+        .withSuccessHandler(function() {
+          invalidateSessionCache();
+          globalBannerText = text;
+          globalBannerVisible = isVisible;
+          renderBanner();
+          restoreAdminUI();
+        })
+        .withFailureHandler(function(err) { handleApiError(err, 'บันทึกประกาศไม่สำเร็จ'); })
+        .updateBanner(text, isVisible);
     }
 
     function renderApps() {
@@ -500,19 +524,19 @@ let appData = [];
         const adminControls = isAdmin 
           ? `<div class="flex items-center gap-3">
                <span class="text-xs text-[#8a96a3] dark:text-[#b8c0c8] bg-[#f5f3ee] dark:bg-[#121820] px-2.5 py-1 rounded-full transition-colors"><i class="fa-solid fa-chart-simple mr-1"></i> ${app.clicks}</span>
-               <button onclick="event.stopPropagation(); editApp('${app.id}')" class="text-[#2c3548] hover:text-[#8b7355] transition" title="แก้ไข"><i class="fa-solid fa-pen-to-square text-lg"></i></button>
-               <button onclick="event.stopPropagation(); deleteApp('${app.id}')" class="text-[#9a7b6a] hover:text-[#7d5e52] transition" title="ลบ"><i class="fa-solid fa-trash text-lg"></i></button>
+               <button onclick="event.stopPropagation(); editApp('${escJs(app.id)}')" class="text-[#2c3548] hover:text-[#8b7355] transition" title="แก้ไข"><i class="fa-solid fa-pen-to-square text-lg"></i></button>
+               <button onclick="event.stopPropagation(); deleteApp('${escJs(app.id)}')" class="text-[#9a7b6a] hover:text-[#7d5e52] transition" title="ลบ"><i class="fa-solid fa-trash text-lg"></i></button>
              </div>` : ``;
 
         cardsHtml += `
-          <div class="lux-app-card ${cardClass}" onclick="openApp('${app.id}', '${app.name}', '${app.url}', ${isReady})">
+          <div class="lux-app-card ${cardClass}" onclick="openApp('${escJs(app.id)}', '${escJs(app.name)}', '${escJs(app.url)}', ${isReady})">
             <article class="app-card-shell">
               <div class="app-card-visual">
-                <img class="app-card-thumb" src="${imgUrl}" alt="" width="128" height="128" loading="lazy" decoding="async" fetchpriority="low" />
+                <img class="app-card-thumb" src="${escHtml(imgUrl)}" alt="${escHtml(app.name)}" width="128" height="128" loading="lazy" decoding="async" fetchpriority="low" />
               </div>
               <div class="app-card-body">
-                <h3 class="app-card-title">${app.name}</h3>
-                <span class="${badgeClass}">${app.status}</span>
+                <h3 class="app-card-title">${escHtml(app.name)}</h3>
+                <span class="${badgeClass}">${escHtml(app.status)}</span>
                 <div class="app-card-footer">
                   <div class="app-card-action"><i class="fa-solid fa-arrow-up-right-from-square"></i></div>
                   ${adminControls}
@@ -634,10 +658,22 @@ let appData = [];
       const user = document.getElementById('username').value;
       const pass = document.getElementById('password').value;
       toggleLoginModal(); showLoadingUI();
-      gasRun().withSuccessHandler(res => {
-        if(res) { isAdmin = true; document.getElementById('btn-login').classList.add('hidden'); document.getElementById('btn-logout').classList.remove('hidden'); document.getElementById('btn-admin-panel').classList.remove('hidden'); showAdminPanel(); } 
-        else { alert('รหัสผ่านไม่ถูกต้อง'); document.getElementById('loading-state').classList.add('hidden'); document.getElementById('main-content').classList.remove('hidden'); }
-      }).verifyLogin(user, pass);
+      gasRun()
+        .withSuccessHandler(function(res) {
+          if (res) {
+            isAdmin = true;
+            document.getElementById('btn-login').classList.add('hidden');
+            document.getElementById('btn-logout').classList.remove('hidden');
+            document.getElementById('btn-admin-panel').classList.remove('hidden');
+            showAdminPanel();
+          } else {
+            alert('รหัสผ่านไม่ถูกต้อง');
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('hidden');
+          }
+        })
+        .withFailureHandler(function(err) { handleApiError(err, 'เข้าสู่ระบบไม่สำเร็จ'); })
+        .verifyLogin(user, pass);
     }
     function logout() { isAdmin = false; document.getElementById('btn-login').classList.remove('hidden'); document.getElementById('btn-logout').classList.add('hidden'); document.getElementById('btn-admin-panel').classList.add('hidden'); hideAdminPanel(); }
     
@@ -719,22 +755,23 @@ let appData = [];
       }).then((result) => {
         if (result.isConfirmed) {
           showLoadingUI();
-          gasRun().withSuccessHandler(res => {
-            invalidateSessionCache();
-            appData = res; 
-            restoreAdminUI(); 
-            loadDashboardData(); 
-            
-            Swal.fire({
-              title: 'ลบสำเร็จ!',
-              text: 'โปรเจกต์ถูกลบออกจากระบบแล้ว',
-              icon: 'success',
-              confirmButtonColor: '#2c3548',
-              background: document.documentElement.classList.contains('dark') ? '#1a2029' : '#ffffff',
-              color: document.documentElement.classList.contains('dark') ? '#f5f3ee' : '#1f2933'
-            });
-            
-          }).deleteProject(id);
+          gasRun()
+            .withSuccessHandler(function(res) {
+              invalidateSessionCache();
+              appData = res;
+              restoreAdminUI();
+              loadDashboardData();
+              Swal.fire({
+                title: 'ลบสำเร็จ!',
+                text: 'โปรเจกต์ถูกลบออกจากระบบแล้ว',
+                icon: 'success',
+                confirmButtonColor: '#2c3548',
+                background: document.documentElement.classList.contains('dark') ? '#1a2029' : '#ffffff',
+                color: document.documentElement.classList.contains('dark') ? '#f5f3ee' : '#1f2933'
+              });
+            })
+            .withFailureHandler(function(err) { handleApiError(err, 'ลบโปรเจกต์ไม่สำเร็จ'); })
+            .deleteProject(id);
         }
       });
     }
@@ -750,11 +787,11 @@ let appData = [];
       const fileToUpload = croppedFileData;
       const apiName = uploadTarget === 'bg' ? 'updateBackgroundImage' : 'updateLogoImage';
       setLoadingMessage('กำลังอัปโหลดรูป...');
-      gasRun()
+      var uploadRunner = gasRun()
         .withSuccessHandler(function (url) {
           invalidateSessionCache();
           if (uploadTarget === 'bg' && url) {
-            document.body.style.backgroundImage = "url('" + url + "')";
+            document.body.style.backgroundImage = "url('" + url.replace(/'/g, "\\'") + "')";
           } else if (url) {
             document.getElementById('site-logo').src = url;
             document.getElementById('site-logo').classList.remove('hidden');
@@ -770,7 +807,7 @@ let appData = [];
               .withSuccessHandler(function (url) {
                 invalidateSessionCache();
                 if (uploadTarget === 'bg' && url) {
-                  document.body.style.backgroundImage = "url('" + url + "')";
+                  document.body.style.backgroundImage = "url('" + url.replace(/'/g, "\\'") + "')";
                 } else if (url) {
                   document.getElementById('site-logo').src = url;
                   document.getElementById('site-logo').classList.remove('hidden');
@@ -782,7 +819,8 @@ let appData = [];
               .withFailureHandler(handleUploadError)
               .setSettingImage(settingKey, imageUrl);
           }, setLoadingMessage);
-        })[apiName](fileToUpload);
+        });
+      uploadRunner[apiName](fileToUpload);
     };
 
     function showLoadingUI() { document.getElementById('loading-state').classList.remove('hidden'); document.getElementById('admin-dashboard').classList.add('hidden'); document.getElementById('main-content').classList.add('hidden'); }
@@ -794,17 +832,21 @@ let appData = [];
         alert('ไม่สามารถโหลดกราฟได้');
         return;
       }
-      gasRun().withSuccessHandler(renderAdminDashboard).getAdminDashboardData();
+      gasRun()
+        .withSuccessHandler(renderAdminDashboard)
+        .withFailureHandler(function(err) { console.warn('dashboard', err); })
+        .getAdminDashboardData();
     }
 
     function renderAdminDashboard(data) {
+      if (!data || !Array.isArray(data.logs)) return;
       const tbody = document.getElementById('log-table-body');
       tbody.innerHTML = data.logs.map(log => `
         <tr class="hover:bg-[#f5f3ee] dark:hover:bg-[#2a3340] transition border-b border-[#e3ddd2] dark:border-[#2d3544] last:border-0">
-          <td class="py-3 pl-2 whitespace-nowrap text-[#8a96a3] dark:text-[#b8c0c8] text-xs transition-colors">${log.time}</td>
+          <td class="py-3 pl-2 whitespace-nowrap text-[#8a96a3] dark:text-[#b8c0c8] text-xs transition-colors">${escHtml(log.time)}</td>
           <td class="py-3 pr-2">
-            <div class="font-medium text-[#2c3542] dark:text-[#f5f3ee] transition-colors">${log.appName}</div>
-            <div class="text-[11px] text-[#6b7885] dark:text-[#b8c0c8] bg-[#f5f3ee] dark:bg-[#121820] inline-block px-2 py-0.5 rounded mt-1 transition-colors">${log.email}</div>
+            <div class="font-medium text-[#2c3542] dark:text-[#f5f3ee] transition-colors">${escHtml(log.appName)}</div>
+            <div class="text-[11px] text-[#6b7885] dark:text-[#b8c0c8] bg-[#f5f3ee] dark:bg-[#121820] inline-block px-2 py-0.5 rounded mt-1 transition-colors">${escHtml(log.email)}</div>
           </td>
         </tr>`).join('');
 
