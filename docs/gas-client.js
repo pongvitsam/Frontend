@@ -1,6 +1,6 @@
 (function (global) {
   var REQUEST_TIMEOUT_MS = 25000;
-  var UPLOAD_TIMEOUT_MS = 120000;
+  var UPLOAD_TIMEOUT_MS = 180000;
 
   var JSONP_FUNCS = {
     getInitialData: 0,
@@ -19,6 +19,10 @@
     updateLogoImage: true,
   };
 
+  var bridgeReady = false;
+  var bridgePending = {};
+  var bridgeListenerInit = false;
+
   function getConfig() {
     return global.APP_CONFIG || {};
   }
@@ -26,6 +30,11 @@
   function getGasExecUrl() {
     var cfg = getConfig();
     return cfg.gasExecUrl || '';
+  }
+
+  function getGasBridgeUrl() {
+    var cfg = getConfig();
+    return cfg.gasBridgeUrl || '';
   }
 
   function isGitHubPagesHost() {
@@ -38,12 +47,27 @@
     return typeof global.google !== 'undefined' && global.google.script && global.google.script.run;
   }
 
+  function isGoogleHostedOrigin(origin) {
+    if (!origin) return false;
+    if (origin.indexOf('https://script.google.com') === 0) return true;
+    return /^https:\/\/([a-z0-9-]+\.)*googleusercontent\.com$/i.test(origin);
+  }
+
   function hasFilePayload(args) {
     return args && args.some(function (a) { return a && a.data; });
   }
 
+  function shouldUseBridge(name, args) {
+    if (!isGitHubPagesHost() || !getGasBridgeUrl()) return false;
+    if (name === 'uploadImage') return true;
+    if (name === 'saveProject' && args[1] && args[1].data) return true;
+    if (FORM_FILE_ACTIONS[name] && hasFilePayload(args)) return true;
+    return false;
+  }
+
   function shouldUseJsonp(name, args) {
     if (isGasHost()) return false;
+    if (shouldUseBridge(name, args)) return false;
     if (name === 'uploadImage') return false;
     if (name === 'saveProject' && args[1] && args[1].data) return false;
     if (FORM_FILE_ACTIONS[name] && hasFilePayload(args)) return false;
@@ -52,17 +76,99 @@
   }
 
   function shouldUseFormPost(name, args) {
-    if (isGasHost() || shouldUseJsonp(name, args)) return false;
+    if (isGasHost() || shouldUseBridge(name, args) || shouldUseJsonp(name, args)) return false;
     if (name === 'uploadImage') return true;
     if (FORM_FILE_ACTIONS[name] && hasFilePayload(args)) return true;
     return false;
   }
 
-  function isGasFormPostOrigin(origin) {
-    if (!origin) return false;
-    if (origin.indexOf('https://script.google.com') === 0) return true;
-    if (origin.indexOf('https://script.googleusercontent.com') === 0) return true;
-    return /^https:\/\/n-[a-z0-9]+-script\.googleusercontent\.com$/i.test(origin);
+  function ensureBridgeFrame() {
+    var frame = global.document.getElementById('gas-bridge-frame');
+    if (!frame) {
+      frame = global.document.createElement('iframe');
+      frame.id = 'gas-bridge-frame';
+      frame.name = 'gas-bridge-frame';
+      frame.title = 'GAS Bridge';
+      frame.setAttribute('style', 'position:absolute;width:0;height:0;border:0;visibility:hidden');
+      frame.src = getGasBridgeUrl();
+      global.document.body.appendChild(frame);
+    } else if (!frame.src) {
+      frame.src = getGasBridgeUrl();
+    }
+    return frame;
+  }
+
+  function initBridgeListener() {
+    if (bridgeListenerInit) return;
+    bridgeListenerInit = true;
+    global.addEventListener('message', function (e) {
+      if (!isGoogleHostedOrigin(e.origin)) return;
+      var msg = e.data;
+      if (!msg || msg.type !== 'gas-bridge') return;
+      if (msg.ready) {
+        bridgeReady = true;
+        return;
+      }
+      if (!msg.id || !bridgePending[msg.id]) return;
+      var pending = bridgePending[msg.id];
+      delete bridgePending[msg.id];
+      if (msg.ok) pending.success(msg.result);
+      else pending.failure({ message: msg.error || 'เซิร์ฟเวอร์ตอบกลับผิดพลาด' });
+    });
+  }
+
+  function callBridge(functionName, args, success, failure) {
+    initBridgeListener();
+    var frame = ensureBridgeFrame();
+    var id = 'bridge_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    var timer = setTimeout(function () {
+      if (!bridgePending[id]) return;
+      delete bridgePending[id];
+      if (failure) failure({ message: 'หมดเวลาเชื่อมต่อเซิร์ฟเวอร์ (ลองใหม่หรือลดขนาดรูป)' });
+    }, UPLOAD_TIMEOUT_MS);
+
+    bridgePending[id] = {
+      success: function (result) {
+        clearTimeout(timer);
+        if (success) success(result);
+      },
+      failure: function (err) {
+        clearTimeout(timer);
+        if (failure) failure(err);
+      },
+    };
+
+    function send() {
+      try {
+        frame.contentWindow.postMessage({
+          type: 'gas-bridge',
+          id: id,
+          function: functionName,
+          args: args || [],
+        }, '*');
+      } catch (err) {
+        delete bridgePending[id];
+        clearTimeout(timer);
+        if (failure) failure({ message: 'เชื่อมต่อ Bridge ไม่สำเร็จ' });
+      }
+    }
+
+    if (bridgeReady) {
+      send();
+      return;
+    }
+
+    var tries = 0;
+    var wait = setInterval(function () {
+      tries += 1;
+      if (bridgeReady) {
+        clearInterval(wait);
+        send();
+      } else if (tries > 50) {
+        clearInterval(wait);
+        send();
+      }
+    }, 100);
   }
 
   function callFormPost(functionName, args, success, failure) {
@@ -107,14 +213,14 @@
     };
 
     messageHandler = function (e) {
-      if (!isGasFormPostOrigin(e.origin)) return;
+      if (!isGoogleHostedOrigin(e.origin)) return;
       var msg = e.data;
       if (!msg || msg.type !== 'gas-form-post' || msg.callback !== cbName) return;
       global[cbName](msg.response);
     };
     global.addEventListener('message', messageHandler);
 
-    var form = document.createElement('form');
+    var form = global.document.createElement('form');
     form.method = 'POST';
     form.action = gasUrl;
     form.target = 'gas-form-frame';
@@ -122,7 +228,7 @@
     form.acceptCharset = 'UTF-8';
 
     function addField(n, v) {
-      var input = document.createElement('input');
+      var input = global.document.createElement('input');
       input.type = 'hidden';
       input.name = n;
       input.value = v;
@@ -133,7 +239,7 @@
     addField('args', JSON.stringify(postArgs));
     if (filePayload) addField('fileData', JSON.stringify(filePayload));
     addField('callback', cbName);
-    document.body.appendChild(form);
+    global.document.body.appendChild(form);
     form.submit();
     setTimeout(function () {
       if (form.parentNode) form.parentNode.removeChild(form);
@@ -146,7 +252,7 @@
       url += '&args=' + encodeURIComponent(JSON.stringify(args));
     }
     var cbName = 'gasJsonp_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-    var script = document.createElement('script');
+    var script = global.document.createElement('script');
     var timer = setTimeout(function () {
       cleanup();
       if (failure) failure({ message: 'หมดเวลาเชื่อมต่อเซิร์ฟเวอร์' });
@@ -172,7 +278,7 @@
       cleanup();
       if (failure) failure({ message: 'โหลด API ไม่สำเร็จ' });
     };
-    document.head.appendChild(script);
+    global.document.head.appendChild(script);
   }
 
   function invokeGas(functionName, args, success, failure) {
@@ -181,6 +287,10 @@
       if (success) runner = runner.withSuccessHandler(success);
       if (failure) runner = runner.withFailureHandler(failure);
       runner[functionName].apply(runner, args || []);
+      return;
+    }
+    if (shouldUseBridge(functionName, args)) {
+      callBridge(functionName, args, success, failure);
       return;
     }
     if (shouldUseJsonp(functionName, args)) {
@@ -229,4 +339,11 @@
     if (isGasHost()) return global.google.script.run;
     return createGasProxy();
   };
+
+  if (isGitHubPagesHost() && getGasBridgeUrl()) {
+    global.addEventListener('DOMContentLoaded', function () {
+      initBridgeListener();
+      ensureBridgeFrame();
+    });
+  }
 })(typeof window !== 'undefined' ? window : this);

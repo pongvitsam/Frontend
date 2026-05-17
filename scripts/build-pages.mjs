@@ -112,6 +112,7 @@ ${bodyHtml}
   <script src="config.js?v=${ASSET_V}"></script>
   <script src="gas-client.js?v=${ASSET_V}"></script>
   <iframe id="gas-form-frame" name="gas-form-frame" style="position:absolute;width:0;height:0;border:0;visibility:hidden" title="GAS API"></iframe>
+  <iframe id="gas-bridge-frame" name="gas-bridge-frame" style="position:absolute;width:0;height:0;border:0;visibility:hidden" title="GAS Bridge"></iframe>
   <script src="app.js?v=${ASSET_V}"></script>
 </body>
 </html>

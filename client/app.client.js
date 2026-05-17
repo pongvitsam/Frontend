@@ -603,8 +603,8 @@ let appData = [];
       const fileInput = document.getElementById('new-img-file').files.length > 0 ? document.getElementById('new-img-file') : document.getElementById('upload-file');
       const originalFile = fileInput.files[0];
       const isBranding = document.getElementById('new-img-file').files.length === 0;
-      const maxSide = isBranding ? 640 : 480;
-      const quality = isBranding ? 0.82 : 0.76;
+      const maxSide = isBranding ? 560 : 400;
+      const quality = isBranding ? 0.8 : 0.72;
       const canvas = cropper.getCroppedCanvas({
         maxWidth: maxSide,
         maxHeight: maxSide,
@@ -676,14 +676,20 @@ let appData = [];
       const p = { id: editingAppId, name: n, url: u, status: s, imageUrl: "" };
 
       if (croppedFileData) {
-        uploadImageFile(croppedFileData, function (imageUrl) {
-          p.imageUrl = imageUrl;
-          setLoadingMessage('กำลังบันทึกโครงการ...');
-          gasRun()
-            .withSuccessHandler(afterProjectSaved)
-            .withFailureHandler(handleUploadError)
-            .saveProject(p, null);
-        }, setLoadingMessage);
+        setLoadingMessage('กำลังอัปโหลดและบันทึกโครงการ...');
+        gasRun()
+          .withSuccessHandler(afterProjectSaved)
+          .withFailureHandler(function (err) {
+            uploadImageFile(croppedFileData, function (imageUrl) {
+              p.imageUrl = imageUrl;
+              setLoadingMessage('กำลังบันทึกโครงการ...');
+              gasRun()
+                .withSuccessHandler(afterProjectSaved)
+                .withFailureHandler(handleUploadError)
+                .saveProject(p, null);
+            }, setLoadingMessage);
+          })
+          .saveProject(p, croppedFileData);
       } else {
         setLoadingMessage('กำลังบันทึกโครงการ...');
         gasRun()
@@ -742,24 +748,41 @@ let appData = [];
       showLoadingUI();
       const settingKey = uploadTarget === 'bg' ? 'BackgroundImage' : 'LogoImage';
       const fileToUpload = croppedFileData;
-      uploadImageFile(fileToUpload, function (imageUrl) {
-        setLoadingMessage('กำลังบันทึกการตั้งค่า...');
-        gasRun()
-          .withSuccessHandler(function (url) {
-            invalidateSessionCache();
-            if (uploadTarget === 'bg' && url) {
-              document.body.style.backgroundImage = "url('" + url + "')";
-            } else if (url) {
-              document.getElementById('site-logo').src = url;
-              document.getElementById('site-logo').classList.remove('hidden');
-              document.getElementById('default-logo-icon').classList.add('hidden');
-            }
-            croppedFileData = null;
-            restoreAdminUI();
-          })
-          .withFailureHandler(handleUploadError)
-          .setSettingImage(settingKey, imageUrl);
-      }, setLoadingMessage);
+      const apiName = uploadTarget === 'bg' ? 'updateBackgroundImage' : 'updateLogoImage';
+      setLoadingMessage('กำลังอัปโหลดรูป...');
+      gasRun()
+        .withSuccessHandler(function (url) {
+          invalidateSessionCache();
+          if (uploadTarget === 'bg' && url) {
+            document.body.style.backgroundImage = "url('" + url + "')";
+          } else if (url) {
+            document.getElementById('site-logo').src = url;
+            document.getElementById('site-logo').classList.remove('hidden');
+            document.getElementById('default-logo-icon').classList.add('hidden');
+          }
+          croppedFileData = null;
+          restoreAdminUI();
+        })
+        .withFailureHandler(function () {
+          uploadImageFile(fileToUpload, function (imageUrl) {
+            setLoadingMessage('กำลังบันทึกการตั้งค่า...');
+            gasRun()
+              .withSuccessHandler(function (url) {
+                invalidateSessionCache();
+                if (uploadTarget === 'bg' && url) {
+                  document.body.style.backgroundImage = "url('" + url + "')";
+                } else if (url) {
+                  document.getElementById('site-logo').src = url;
+                  document.getElementById('site-logo').classList.remove('hidden');
+                  document.getElementById('default-logo-icon').classList.add('hidden');
+                }
+                croppedFileData = null;
+                restoreAdminUI();
+              })
+              .withFailureHandler(handleUploadError)
+              .setSettingImage(settingKey, imageUrl);
+          }, setLoadingMessage);
+        })[apiName](fileToUpload);
     };
 
     function showLoadingUI() { document.getElementById('loading-state').classList.remove('hidden'); document.getElementById('admin-dashboard').classList.add('hidden'); document.getElementById('main-content').classList.add('hidden'); }
