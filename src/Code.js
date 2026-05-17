@@ -96,11 +96,11 @@ function formatApiResponse_(payload, callback, htmlCallback) {
   if (htmlCallback) {
     var safeCb = String(callback).replace(/[^\w$._-]/g, '');
     return HtmlService.createHtmlOutput(
-      '<!DOCTYPE html><html><body><script>try{var f=parent["' +
+      '<!DOCTYPE html><html><body><script>try{parent.postMessage({type:"gas-form-post",callback:"' +
         safeCb +
-        '"];if(typeof f==="function")f(' +
-        body +
-        ');}catch(e){}</script></body></html>'
+        '",response:JSON.parse(' +
+        JSON.stringify(body) +
+        ')},"*");}catch(e){}</script></body></html>'
     ).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   }
   return ContentService.createTextOutput(callback + '(' + body + ')')

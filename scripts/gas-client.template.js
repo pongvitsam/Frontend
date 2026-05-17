@@ -43,6 +43,13 @@
     return true;
   }
 
+  function isGasFormPostOrigin(origin) {
+    if (!origin) return false;
+    if (origin.indexOf('https://script.google.com') === 0) return true;
+    if (origin.indexOf('https://script.googleusercontent.com') === 0) return true;
+    return /^https:\/\/n-[a-z0-9]+-script\.googleusercontent\.com$/i.test(origin);
+  }
+
   function callFormPost(functionName, args, success, failure) {
     var gasUrl = getGasExecUrl();
     if (!gasUrl) {
@@ -56,8 +63,14 @@
       if (failure) failure({ message: 'หมดเวลาเชื่อมต่อเซิร์ฟเวอร์' });
     }, hasFile ? UPLOAD_TIMEOUT_MS : REQUEST_TIMEOUT_MS);
 
+    var messageHandler = null;
+
     function cleanup() {
       clearTimeout(timer);
+      if (messageHandler) {
+        global.removeEventListener('message', messageHandler);
+        messageHandler = null;
+      }
       try { delete global[cbName]; } catch (e) {}
     }
 
@@ -69,6 +82,14 @@
         failure({ message: (res && res.error) || 'API error' });
       }
     };
+
+    messageHandler = function (e) {
+      if (!isGasFormPostOrigin(e.origin)) return;
+      var msg = e.data;
+      if (!msg || msg.type !== 'gas-form-post' || msg.callback !== cbName) return;
+      global[cbName](msg.response);
+    };
+    global.addEventListener('message', messageHandler);
 
     var form = document.createElement('form');
     form.method = 'POST';

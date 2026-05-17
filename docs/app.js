@@ -647,7 +647,9 @@ let appData = [];
     function submitProject() {
       const n = document.getElementById('new-name').value, u = document.getElementById('new-url').value, s = document.getElementById('new-status').value;
       if(!n || !u) return alert('กรอกชื่อและ URL');
-      document.getElementById('project-modal').classList.add('hidden'); showLoadingUI();
+      document.getElementById('project-modal').classList.add('hidden');
+      showLoadingUI();
+      setLoadingMessage(croppedFileData ? 'กำลังอัปโหลดรูปและบันทึกโครงการ...' : 'กำลังบันทึกโครงการ...');
       const p = { id: editingAppId, name: n, url: u, status: s, imageUrl: "" };
       
       if (croppedFileData) {
@@ -721,7 +723,9 @@ let appData = [];
 
     document.getElementById('btn-submit-upload').onclick = function() {
       if(!croppedFileData) return alert('กรุณาเลือกไฟล์และกดยืนยันการตัดรูปภาพก่อนครับ');
-      closeUploadModal(); showLoadingUI();
+      closeUploadModal();
+      showLoadingUI();
+      setLoadingMessage('กำลังอัปโหลดรูป...');
       if(uploadTarget === 'bg') {
         gasRun()
           .withSuccessHandler(function (url) {
