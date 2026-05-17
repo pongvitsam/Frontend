@@ -73,15 +73,19 @@ let appData = [];
       document.head.appendChild(link);
     }
 
-    var SESSION_CACHE_KEY = 'pk2_initial_v4';
+    var SESSION_CACHE_KEY = 'pk2_initial_v5';
     var SESSION_CACHE_MS = 8 * 60 * 1000;
-    var LOCAL_CACHE_KEY = 'pk2_initial_ls_v1';
+    var LOCAL_CACHE_KEY = 'pk2_initial_ls_v2';
     var LOCAL_CACHE_MS = 24 * 60 * 60 * 1000;
     var GAS_EXEC_FALLBACK = 'https://script.google.com/macros/s/AKfycby8V8L2CRZINAgkEcqfwjduA8w_7Yrl9t5AoQmISqtzq9BsghYbVjKOlZHvMuZdVUsagw/exec';
     var bootFinished = false;
 
     window.addEventListener('pk2-prefetch-ready', function (ev) {
-      if (ev.detail && ev.detail.apps) window.__PK2_PENDING_DATA__ = ev.detail;
+      if (!ev.detail || !ev.detail.apps) return;
+      window.__PK2_PENDING_DATA__ = ev.detail;
+      if (bootFinished) {
+        initApp(ev.detail, { fromCache: false, silent: true });
+      }
     });
 
     function invalidateSessionCache() {
@@ -173,7 +177,7 @@ let appData = [];
 
     function refreshDataInBackground() {
       loadInitialData(
-        function (data) { initApp(data, { silent: true }); },
+        function (data) { initApp(data, { silent: true, fromCache: false }); },
         function () {}
       );
     }
@@ -402,9 +406,14 @@ let appData = [];
       loadSarabunDeferred();
       initSortDropdown();
       cleanupLegacyServiceWorker();
+      try {
+        localStorage.removeItem('pk2_initial_ls_v1');
+        sessionStorage.removeItem('pk2_initial_v4');
+      } catch (e) {}
       var expectedV = (window.APP_CONFIG && window.APP_CONFIG.assetVersion) || '';
       if (expectedV && localStorage.getItem('pk2_asset_v') !== expectedV) {
         purgeStaleCachesAsync(expectedV);
+        invalidateSessionCache();
       }
       startApplicationBoot();
     });
@@ -455,7 +464,7 @@ let appData = [];
         if (mainEl) mainEl.classList.remove('hidden');
         renderApps();
 
-        if (!opts.silent) {
+        if (!opts.fromCache) {
           persistCache(data);
         }
       } catch (err) {
@@ -547,12 +556,20 @@ let appData = [];
         reorderSaveTimer = null;
         if (reorderSaving) return;
         reorderSaving = true;
-        var orderedIds = appData.map(function (a) { return a.id; });
+        var orderedIds = sortAppsForDisplay(appData, 'order').map(function (a) { return a.id; });
         google.script.run
           .reorderApps(orderedIds)
           .withSuccessHandler(function (apps) {
             reorderSaving = false;
             appData = apps || appData;
+            var cached = readCachedPayload();
+            if (cached && cached.data) {
+              cached.data.apps = appData;
+              persistCache(cached.data);
+            } else {
+              persistCache({ apps: appData, email: document.getElementById('user-email').innerText || '' });
+            }
+            renderApps();
           })
           .withFailureHandler(function (err) {
             reorderSaving = false;
@@ -788,7 +805,21 @@ let appData = [];
         .withFailureHandler(function(err) { handleApiError(err, 'เข้าสู่ระบบไม่สำเร็จ'); })
         .verifyLogin(user, pass);
     }
-    function logout() { isAdmin = false; document.getElementById('btn-login').classList.remove('hidden'); document.getElementById('btn-logout').classList.add('hidden'); document.getElementById('btn-admin-panel').classList.add('hidden'); hideAdminPanel(); }
+    function logout() {
+      isAdmin = false;
+      editingAppId = null;
+      try { sessionStorage.removeItem('pk2_admin_session'); } catch (e) {}
+      document.getElementById('btn-login').classList.remove('hidden');
+      document.getElementById('btn-logout').classList.add('hidden');
+      document.getElementById('btn-admin-panel').classList.add('hidden');
+      var userEl = document.getElementById('username');
+      var passEl = document.getElementById('password');
+      if (userEl) userEl.value = '';
+      if (passEl) passEl.value = '';
+      hideAdminPanel();
+      renderApps();
+    }
+    window.logout = logout;
     
     function showAdminPanel() { document.getElementById('main-content').classList.add('hidden'); document.getElementById('admin-dashboard').classList.remove('hidden'); document.getElementById('loading-state').classList.add('hidden'); loadDashboardData(); renderApps(); }
     function hideAdminPanel() { document.getElementById('admin-dashboard').classList.add('hidden'); document.getElementById('main-content').classList.remove('hidden'); renderApps(); }

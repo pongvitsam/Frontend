@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://script.google.com" crossorigin>
   <script>
   (function () {
-    var LS_KEY = 'pk2_initial_ls_v1';
+    var LS_KEY = 'pk2_initial_ls_v2';
     var GAS_API = 'https://script.google.com/macros/s/AKfycby8V8L2CRZINAgkEcqfwjduA8w_7Yrl9t5AoQmISqtzq9BsghYbVjKOlZHvMuZdVUsagw/exec';
     var MAX_AGE = 86400000;
 
@@ -86,7 +86,9 @@
         </button>
         <span id="user-email" class="text-sm font-light hidden sm:block text-[#6b7885] dark:text-[#b8c0c8]"></span>
         <button id="btn-login" onclick="toggleLoginModal()" class="btn-lux-primary px-5 py-2 rounded-full shadow-sm text-sm tracking-wide">ผู้ดูแลระบบ</button>
-        <button id="btn-logout" onclick="logout()" class="hidden bg-[#9a7b6a] hover:bg-[#7d5e52] text-white px-5 py-2 rounded-full shadow-sm text-sm tracking-wide">ออกจากระบบ</button>
+        <button type="button" id="btn-logout" onclick="logout()" class="hidden btn-lux-logout px-5 py-2 rounded-full shadow-sm text-sm tracking-wide">
+          <i class="fa-solid fa-right-from-bracket mr-2"></i>ออกจากระบบ
+        </button>
       </div>
     </div>
   </nav>

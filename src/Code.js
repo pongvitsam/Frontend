@@ -5,8 +5,8 @@ const CACHE_TTL_INITIAL_SEC = 900;
 const CACHE_TTL_APPS_SEC = 300;
 const CACHE_TTL_ADMIN_SEC = 120;
 const CACHE_TTL_SETTINGS_SEC = 600;
-const CACHE_KEY_INITIAL = 'appInitialDataV2';
-const CACHE_KEY_APPS = 'appsDataV2';
+const CACHE_KEY_INITIAL = 'appInitialDataV3';
+const CACHE_KEY_APPS = 'appsDataV3';
 const CACHE_KEY_ADMIN = 'adminDashboardV2';
 const CACHE_KEY_SETTINGS = 'settingsMapV2';
 
@@ -293,7 +293,7 @@ function getApps() {
   if (cached) {
     try {
       const parsed = JSON.parse(cached);
-      if (Array.isArray(parsed) && parsed.length && parsed[0].sortOrder != null) {
+      if (Array.isArray(parsed) && parsed.length) {
         return sortAppsByOrder_(parsed);
       }
     } catch (e) {}
@@ -319,16 +319,30 @@ function reorderApps(orderedIds) {
     sheet.getRange(1, 7).setValue('sortOrder');
   }
 
-  for (let i = 0; i < orderedIds.length; i++) {
-    const finder = sheet.getRange(2, 1, lastRow - 1, 1)
-      .createTextFinder(String(orderedIds[i])).matchEntireCell(true);
-    const hit = finder.findNext();
-    if (hit) sheet.getRange(hit.getRow(), 7).setValue(i + 1);
+  const numRows = lastRow - 1;
+  const idValues = sheet.getRange(2, 1, numRows, 1).getValues();
+  const idToRow = {};
+  for (let r = 0; r < idValues.length; r++) {
+    const cellVal = idValues[r][0];
+    if (cellVal !== '' && cellVal != null) {
+      idToRow[String(cellVal)] = r + 2;
+    }
   }
 
-  const cache = CacheService.getScriptCache();
-  cache.remove(CACHE_KEY_APPS);
-  cache.remove(CACHE_KEY_INITIAL);
+  const orderCol = [];
+  for (let i = 0; i < orderedIds.length; i++) {
+    const rowNo = idToRow[String(orderedIds[i])];
+    if (rowNo) orderCol.push({ row: rowNo, order: i + 1 });
+  }
+  if (!orderCol.length) {
+    throw new Error('ไม่พบแอปใน Sheet สำหรับบันทึกลำดับ');
+  }
+
+  orderCol.forEach(function (item) {
+    sheet.getRange(item.row, 7).setValue(item.order);
+  });
+
+  invalidateAppCaches_();
   return getApps();
 }
 
