@@ -228,7 +228,6 @@
     };
 
     messageHandler = function (e) {
-      if (!isGoogleHostedOrigin(e.origin)) return;
       var msg = e.data;
       if (!msg || msg.type !== 'gas-form-post' || msg.callback !== cbName) return;
       global[cbName](msg.response);
