@@ -1,6 +1,7 @@
 (function (global) {
   var REQUEST_TIMEOUT_MS = 25000;
   var UPLOAD_TIMEOUT_MS = 180000;
+  var BRIDGE_TIMEOUT_MS = 45000;
 
   var JSONP_FUNCS = {
     getInitialData: 0,
@@ -139,7 +140,7 @@
       if (!bridgePending[id]) return;
       delete bridgePending[id];
       if (failure) failure({ message: 'หมดเวลาเชื่อมต่อเซิร์ฟเวอร์ (ลองใหม่หรือลดขนาดรูป)' });
-    }, UPLOAD_TIMEOUT_MS);
+    }, BRIDGE_TIMEOUT_MS);
 
     bridgePending[id] = {
       success: function (result) {
@@ -306,7 +307,13 @@
       return;
     }
     if (shouldUseBridge(functionName, args)) {
-      callBridge(functionName, args, success, failure);
+      callBridge(functionName, args, success, function (err) {
+        if (functionName === 'saveProject' || functionName === 'uploadImage' || FORM_FILE_ACTIONS[functionName]) {
+          callFormPost(functionName, args, success, failure);
+          return;
+        }
+        if (failure) failure(err);
+      });
       return;
     }
     if (shouldUseJsonp(functionName, args)) {
