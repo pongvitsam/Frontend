@@ -61,7 +61,7 @@
   function shouldUseBridge(name, args) {
     if (!isGitHubPagesHost() || !getGasBridgeUrl()) return false;
     if (name === 'uploadImage') return true;
-    if (name === 'saveProject' && args[1] && args[1].data) return true;
+    if (name === 'saveProject') return true;
     if (FORM_FILE_ACTIONS[name] && hasFilePayload(args)) return true;
     return false;
   }
