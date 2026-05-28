@@ -120,7 +120,18 @@ let appData = [];
     }
 
     function thumbUrl(url) {
-      var fallback = 'https://via.placeholder.com/320x112.png?text=No+Image';
+      var fallback =
+        'data:image/svg+xml;utf8,' +
+        encodeURIComponent(
+          '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="112" viewBox="0 0 320 112">' +
+          '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">' +
+          '<stop offset="0%" stop-color="#f2eee6"/><stop offset="100%" stop-color="#e3ddd2"/>' +
+          '</linearGradient></defs>' +
+          '<rect width="320" height="112" fill="url(#g)"/>' +
+          '<g fill="#8a96a3" font-family="Sarabun,Arial,sans-serif" text-anchor="middle">' +
+          '<text x="160" y="56" font-size="15" font-weight="600">No Image</text>' +
+          '</g></svg>'
+        );
       if (!url) return fallback;
       if (/drive\.google\.com\/thumbnail/i.test(url)) {
         return url.replace(/sz=w\d+/i, 'sz=w240');
