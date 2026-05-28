@@ -810,7 +810,7 @@ let appData = [];
 
     function afterProjectSaved(res) {
       invalidateSessionCache();
-      appData = res;
+      if (Array.isArray(res)) appData = res;
       editingAppId = null;
       croppedFileData = null;
       restoreAdminUI();
@@ -919,6 +919,42 @@ let appData = [];
       document.getElementById('project-modal').classList.add('hidden');
       showLoadingUI();
       const p = { id: editingAppId, name: n, url: u, status: s, imageUrl: "" };
+      var flowDone = false;
+      var flowTimer = setTimeout(function () {
+        if (flowDone) return;
+        setLoadingMessage('การอัปโหลดใช้เวลานาน กำลังบันทึกข้อมูลแบบไม่ใช้รูป...');
+        saveProjectWithTimeout(
+          p,
+          null,
+          function (res) {
+            if (flowDone) return;
+            flowDone = true;
+            clearTimeout(flowTimer);
+            afterProjectSaved(res);
+          },
+          function (err) {
+            if (flowDone) return;
+            flowDone = true;
+            clearTimeout(flowTimer);
+            handleUploadError(err);
+          },
+          20000
+        );
+      }, 35000);
+
+      function finishProjectSave(res) {
+        if (flowDone) return;
+        flowDone = true;
+        clearTimeout(flowTimer);
+        afterProjectSaved(res);
+      }
+
+      function failProjectSave(err) {
+        if (flowDone) return;
+        flowDone = true;
+        clearTimeout(flowTimer);
+        handleUploadError(err);
+      }
 
       if (croppedFileData) {
         // Always use 2-step flow for images: upload first, then save metadata.
@@ -929,18 +965,18 @@ let appData = [];
           function (imageUrl) {
             p.imageUrl = imageUrl || '';
             setLoadingMessage('กำลังบันทึกโครงการ...');
-            saveProjectWithTimeout(p, null, afterProjectSaved, handleUploadError, 20000);
+            saveProjectWithTimeout(p, null, finishProjectSave, failProjectSave, 20000);
           },
           function () {
             p.imageUrl = '';
             setLoadingMessage('อัปโหลดรูปไม่สำเร็จ กำลังบันทึกข้อมูลแบบไม่ใช้รูป...');
-            saveProjectWithTimeout(p, null, afterProjectSaved, handleUploadError, 20000);
+            saveProjectWithTimeout(p, null, finishProjectSave, failProjectSave, 20000);
           },
           20000
         );
       } else {
         setLoadingMessage('กำลังบันทึกโครงการ...');
-        saveProjectWithTimeout(p, null, afterProjectSaved, handleUploadError, 25000);
+        saveProjectWithTimeout(p, null, finishProjectSave, failProjectSave, 25000);
       }
     }
       async function deleteApp(id) {
