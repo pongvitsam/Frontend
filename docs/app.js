@@ -760,6 +760,30 @@ let appData = [];
         .uploadImage(fileData);
     }
 
+    function uploadImageWithTimeout(fileData, onSuccess, onFailure, timeoutMs) {
+      var settled = false;
+      var timer = setTimeout(function () {
+        if (settled) return;
+        settled = true;
+        if (onFailure) onFailure({ message: 'หมดเวลารอการอัปโหลดรูป' });
+      }, timeoutMs || 25000);
+
+      gasRun()
+        .withSuccessHandler(function (imageUrl) {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          if (onSuccess) onSuccess(imageUrl);
+        })
+        .withFailureHandler(function (err) {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          if (onFailure) onFailure(err);
+        })
+        .uploadImage(fileData);
+    }
+
     function saveProjectWithTimeout(project, fileData, onSuccess, onFailure, timeoutMs) {
       var settled = false;
       var timer = setTimeout(function () {
@@ -903,11 +927,33 @@ let appData = [];
           croppedFileData,
           afterProjectSaved,
           function () {
-            uploadImageFile(croppedFileData, function (imageUrl) {
-              p.imageUrl = imageUrl;
-              setLoadingMessage('กำลังบันทึกโครงการ...');
-              saveProjectWithTimeout(p, null, afterProjectSaved, handleUploadError, 25000);
-            }, setLoadingMessage);
+            setLoadingMessage('กำลังลองอัปโหลดรูปอีกครั้ง...');
+            uploadImageWithTimeout(
+              croppedFileData,
+              function (imageUrl) {
+                p.imageUrl = imageUrl || '';
+                setLoadingMessage('กำลังบันทึกโครงการ...');
+                saveProjectWithTimeout(
+                  p,
+                  null,
+                  afterProjectSaved,
+                  function () {
+                    // Final fallback: save project without image to avoid stuck UI.
+                    p.imageUrl = '';
+                    setLoadingMessage('บันทึกข้อมูลแบบไม่ใช้รูป...');
+                    saveProjectWithTimeout(p, null, afterProjectSaved, handleUploadError, 20000);
+                  },
+                  20000
+                );
+              },
+              function () {
+                // Upload failed/timed out -> still save project without image.
+                p.imageUrl = '';
+                setLoadingMessage('อัปโหลดรูปไม่สำเร็จ กำลังบันทึกข้อมูลแบบไม่ใช้รูป...');
+                saveProjectWithTimeout(p, null, afterProjectSaved, handleUploadError, 20000);
+              },
+              20000
+            );
           },
           25000
         );
