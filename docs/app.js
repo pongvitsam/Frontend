@@ -921,41 +921,22 @@ let appData = [];
       const p = { id: editingAppId, name: n, url: u, status: s, imageUrl: "" };
 
       if (croppedFileData) {
-        setLoadingMessage('กำลังอัปโหลดและบันทึกโครงการ...');
-        saveProjectWithTimeout(
-          p,
+        // Always use 2-step flow for images: upload first, then save metadata.
+        // Avoid sending big base64 inside saveProject because it can hang in some browsers.
+        setLoadingMessage('กำลังอัปโหลดรูป...');
+        uploadImageWithTimeout(
           croppedFileData,
-          afterProjectSaved,
-          function () {
-            setLoadingMessage('กำลังลองอัปโหลดรูปอีกครั้ง...');
-            uploadImageWithTimeout(
-              croppedFileData,
-              function (imageUrl) {
-                p.imageUrl = imageUrl || '';
-                setLoadingMessage('กำลังบันทึกโครงการ...');
-                saveProjectWithTimeout(
-                  p,
-                  null,
-                  afterProjectSaved,
-                  function () {
-                    // Final fallback: save project without image to avoid stuck UI.
-                    p.imageUrl = '';
-                    setLoadingMessage('บันทึกข้อมูลแบบไม่ใช้รูป...');
-                    saveProjectWithTimeout(p, null, afterProjectSaved, handleUploadError, 20000);
-                  },
-                  20000
-                );
-              },
-              function () {
-                // Upload failed/timed out -> still save project without image.
-                p.imageUrl = '';
-                setLoadingMessage('อัปโหลดรูปไม่สำเร็จ กำลังบันทึกข้อมูลแบบไม่ใช้รูป...');
-                saveProjectWithTimeout(p, null, afterProjectSaved, handleUploadError, 20000);
-              },
-              20000
-            );
+          function (imageUrl) {
+            p.imageUrl = imageUrl || '';
+            setLoadingMessage('กำลังบันทึกโครงการ...');
+            saveProjectWithTimeout(p, null, afterProjectSaved, handleUploadError, 20000);
           },
-          25000
+          function () {
+            p.imageUrl = '';
+            setLoadingMessage('อัปโหลดรูปไม่สำเร็จ กำลังบันทึกข้อมูลแบบไม่ใช้รูป...');
+            saveProjectWithTimeout(p, null, afterProjectSaved, handleUploadError, 20000);
+          },
+          20000
         );
       } else {
         setLoadingMessage('กำลังบันทึกโครงการ...');
