@@ -749,6 +749,30 @@ let appData = [];
         .uploadImage(fileData);
     }
 
+    function saveProjectWithTimeout(project, fileData, onSuccess, onFailure, timeoutMs) {
+      var settled = false;
+      var timer = setTimeout(function () {
+        if (settled) return;
+        settled = true;
+        if (onFailure) onFailure({ message: 'หมดเวลารอการบันทึกโครงการ' });
+      }, timeoutMs || 30000);
+
+      gasRun()
+        .withSuccessHandler(function (res) {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          if (onSuccess) onSuccess(res);
+        })
+        .withFailureHandler(function (err) {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          if (onFailure) onFailure(err);
+        })
+        .saveProject(project, fileData || null);
+    }
+
     function afterProjectSaved(res) {
       invalidateSessionCache();
       appData = res;
@@ -863,25 +887,22 @@ let appData = [];
 
       if (croppedFileData) {
         setLoadingMessage('กำลังอัปโหลดและบันทึกโครงการ...');
-        gasRun()
-          .withSuccessHandler(afterProjectSaved)
-          .withFailureHandler(function (err) {
+        saveProjectWithTimeout(
+          p,
+          croppedFileData,
+          afterProjectSaved,
+          function () {
             uploadImageFile(croppedFileData, function (imageUrl) {
               p.imageUrl = imageUrl;
               setLoadingMessage('กำลังบันทึกโครงการ...');
-              gasRun()
-                .withSuccessHandler(afterProjectSaved)
-                .withFailureHandler(handleUploadError)
-                .saveProject(p, null);
+              saveProjectWithTimeout(p, null, afterProjectSaved, handleUploadError, 25000);
             }, setLoadingMessage);
-          })
-          .saveProject(p, croppedFileData);
+          },
+          25000
+        );
       } else {
         setLoadingMessage('กำลังบันทึกโครงการ...');
-        gasRun()
-          .withSuccessHandler(afterProjectSaved)
-          .withFailureHandler(handleUploadError)
-          .saveProject(p, null);
+        saveProjectWithTimeout(p, null, afterProjectSaved, handleUploadError, 25000);
       }
     }
       async function deleteApp(id) {
