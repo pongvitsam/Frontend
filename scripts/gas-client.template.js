@@ -61,9 +61,9 @@
 
   function shouldUseBridge(name, args) {
     if (!isGitHubPagesHost() || !getGasBridgeUrl()) return false;
-    if (name === 'uploadImage') return true;
-    if (name === 'saveProject') return true;
-    if (FORM_FILE_ACTIONS[name] && hasFilePayload(args)) return true;
+    // Temporarily disable bridge path on Pages due cross-origin
+    // postMessage drops observed in some browsers/webviews.
+    if (name) return false;
     return false;
   }
 
@@ -363,10 +363,5 @@
     return createGasProxy();
   };
 
-  if (isGitHubPagesHost() && getGasBridgeUrl()) {
-    global.addEventListener('DOMContentLoaded', function () {
-      initBridgeListener();
-      ensureBridgeFrame();
-    });
-  }
+  // Bridge is initialized lazily and currently disabled by shouldUseBridge().
 })(typeof window !== 'undefined' ? window : this);
