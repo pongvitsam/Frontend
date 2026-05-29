@@ -823,8 +823,8 @@ let appData = [];
       const fileInput = document.getElementById('new-img-file').files.length > 0 ? document.getElementById('new-img-file') : document.getElementById('upload-file');
       const originalFile = fileInput.files[0];
       const isBranding = document.getElementById('new-img-file').files.length === 0;
-      const maxSide = isBranding ? 560 : 400;
-      const quality = isBranding ? 0.8 : 0.72;
+      const maxSide = isBranding ? 560 : 320;
+      const quality = isBranding ? 0.8 : 0.68;
       const canvas = cropper.getCroppedCanvas({
         maxWidth: maxSide,
         maxHeight: maxSide,

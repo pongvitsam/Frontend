@@ -204,7 +204,13 @@
     var cbName = 'gasForm_' + Date.now() + '_' + Math.random().toString(36).slice(2);
     var timer = setTimeout(function () {
       cleanup();
-      if (failure) failure({ message: 'หมดเวลาเชื่อมต่อเซิร์ฟเวอร์' });
+      if (failure) {
+        failure({
+          message: hasFile
+            ? 'หมดเวลาอัปโหลดรูป (ลองรูปเล็กลงหรือลองใหม่)'
+            : 'หมดเวลาเชื่อมต่อเซิร์ฟเวอร์',
+        });
+      }
     }, hasFile ? UPLOAD_TIMEOUT_MS : REQUEST_TIMEOUT_MS);
 
     var messageHandler = null;
