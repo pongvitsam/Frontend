@@ -89,10 +89,45 @@ let appData = [];
       }
     });
 
+    function clearBootPrefetchGlobals() {
+      try { delete window.__BOOT_DATA__; } catch (e) {}
+      try { delete window.__PREFETCH_DATA__; } catch (e) {}
+    }
+
     function invalidateSessionCache() {
       memoryCachePayload = null;
+      clearBootPrefetchGlobals();
       try { sessionStorage.removeItem(SESSION_CACHE_KEY); } catch (e) {}
       try { localStorage.removeItem(LOCAL_CACHE_KEY); } catch (e) {}
+    }
+
+    function applySiteBranding(data) {
+      data = data || {};
+      globalBannerText = data.bannerText || '';
+      globalBannerVisible = (data.bannerVisible === true || data.bannerVisible === 'true');
+      renderBanner();
+
+      var logoEl = document.getElementById('site-logo');
+      var iconEl = document.getElementById('default-logo-icon');
+      if (data.logoImage) {
+        if (logoEl) {
+          logoEl.src = data.logoImage;
+          logoEl.classList.remove('hidden');
+        }
+        if (iconEl) iconEl.classList.add('hidden');
+      } else {
+        if (logoEl) {
+          logoEl.removeAttribute('src');
+          logoEl.classList.add('hidden');
+        }
+        if (iconEl) iconEl.classList.remove('hidden');
+      }
+
+      if (data.bgImage) {
+        document.body.style.backgroundImage = "url('" + String(data.bgImage).replace(/'/g, "\\'") + "')";
+      } else {
+        document.body.style.backgroundImage = '';
+      }
     }
 
     function persistCache(data) {
@@ -286,14 +321,19 @@ let appData = [];
       );
     }
 
-    function loadInitialData(success, failure) {
-      if (window.__PREFETCH_DATA__ && window.__PREFETCH_DATA__.apps) {
-        success(window.__PREFETCH_DATA__);
-        return;
-      }
-      if (window.__BOOT_DATA__ && window.__BOOT_DATA__.apps) {
-        success(window.__BOOT_DATA__);
-        return;
+    function loadInitialData(success, failure, opts) {
+      opts = opts || {};
+      if (!opts.forceFresh) {
+        if (window.__PREFETCH_DATA__ && window.__PREFETCH_DATA__.apps) {
+          success(window.__PREFETCH_DATA__);
+          return;
+        }
+        if (window.__BOOT_DATA__ && window.__BOOT_DATA__.apps) {
+          success(window.__BOOT_DATA__);
+          return;
+        }
+      } else {
+        clearBootPrefetchGlobals();
       }
       var host = window.location && window.location.hostname;
       var onPages = host === 'pongvitsam.github.io' || (host && host.endsWith('.github.io'));
@@ -473,6 +513,7 @@ let appData = [];
 
       if (status !== 'done') return false;
 
+      clearBootPrefetchGlobals();
       invalidateSessionCache();
       isAdmin = true;
       showLoadingUI();
@@ -488,7 +529,8 @@ let appData = [];
         },
         function (err) {
           handleApiError(err, 'โหลดข้อมูลไม่สำเร็จ');
-        }
+        },
+        { forceFresh: true }
       );
       return true;
     }
@@ -541,16 +583,7 @@ let appData = [];
         if (emailEl) emailEl.innerText = data.email || '';
         appData = data.apps;
 
-        globalBannerText = data.bannerText || '';
-        globalBannerVisible = (data.bannerVisible === true || data.bannerVisible === 'true');
-        renderBanner();
-
-        if (data.bgImage) document.body.style.backgroundImage = 'url(\'' + data.bgImage + '\')';
-        if (data.logoImage) {
-          document.getElementById('site-logo').src = data.logoImage;
-          document.getElementById('site-logo').classList.remove('hidden');
-          document.getElementById('default-logo-icon').classList.add('hidden');
-        }
+        applySiteBranding(data);
 
         var loadingEl = document.getElementById('loading-state');
         var mainEl = document.getElementById('main-content');
