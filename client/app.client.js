@@ -435,6 +435,7 @@ let appData = [];
       var form = document.createElement('form');
       form.method = 'POST';
       form.action = gasUrl;
+      form.target = '_top';
       form.acceptCharset = 'UTF-8';
       function addField(name, value) {
         var input = document.createElement('input');

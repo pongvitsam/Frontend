@@ -49,11 +49,24 @@ function buildReturnUrl_(base, pairs) {
   return u;
 }
 
+function escapeHtmlAttr_(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;');
+}
+
 function redirectHtml_(url) {
+  var safeAttr = escapeHtmlAttr_(url);
   return HtmlService.createHtmlOutput(
-    '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>' +
-    '<p style="font-family:sans-serif;text-align:center;padding:2rem">กำลังกลับหน้าเว็บ...</p>' +
-    '<script>window.top.location.replace(' + JSON.stringify(url) + ');</script></body></html>'
+    '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
+    '<meta http-equiv="refresh" content="0;url=' + safeAttr + '">' +
+    '</head><body style="font-family:sans-serif;text-align:center;padding:2rem">' +
+    '<p>กำลังกลับหน้าเว็บ...</p>' +
+    '<p><a id="back" href="' + safeAttr + '">คลิกที่นี่หากไม่ถูกนำกลับอัตโนมัติ</a></p>' +
+    '<script>(function(){var u=' + JSON.stringify(url) + ';' +
+    'function go(){try{window.location.replace(u);}catch(e){window.location.href=u;}}' +
+    'go();setTimeout(go,400);})();</script></body></html>'
   ).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
@@ -176,7 +189,7 @@ function formatApiResponse_(payload, callback, htmlCallback, returnUrl) {
       'if(ru){var u=ru+(ru.indexOf("?")>=0?"&":"?")+"gas_cb="+encodeURIComponent(cb)+"&gas_ok="+(p.ok?"1":"0");' +
       'if(p.ok&&typeof p.data==="string")u+="&gas_data="+encodeURIComponent(p.data);' +
       'else if(!p.ok)u+="&gas_err="+encodeURIComponent(p.error||"API error");' +
-      'window.top.location.replace(u);}' +
+      'try{window.location.replace(u);}catch(e3){window.location.href=u;}}' +
       '})();';
     return HtmlService.createHtmlOutput(
       '<!DOCTYPE html><html><body><script>' + script + '</script></body></html>'
