@@ -415,36 +415,84 @@ let appData = [];
       });
     }
 
-    function resumeProjectUploadFromRedirect() {
+    function getPagesReturnUrl() {
+      var cfg = window.APP_CONFIG || {};
+      if (cfg.pagesBase) return String(cfg.pagesBase).replace(/\/?$/, '/');
+      var loc = window.location;
+      return (loc.origin || '') + (loc.pathname || '/');
+    }
+
+    function navigateToGasUploadForProject(project, fileData) {
+      var gasUrl = getGasExecUrl();
+      if (!gasUrl) {
+        alert('ไม่พบ URL API');
+        restoreAdminUI();
+        return;
+      }
+      try {
+        sessionStorage.setItem('pk2_admin_restore', '1');
+      } catch (e) {}
+      var form = document.createElement('form');
+      form.method = 'POST';
+      form.action = gasUrl;
+      form.acceptCharset = 'UTF-8';
+      function addField(name, value) {
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+      }
+      addField('page', 'upload');
+      addField('returnUrl', getPagesReturnUrl());
+      addField('project', JSON.stringify(project));
+      addField('fileData', JSON.stringify(fileData));
+      document.body.appendChild(form);
+      setLoadingMessage('กำลังอัปโหลดบนเซิร์ฟเวอร์...');
+      form.submit();
+    }
+
+    function resumeFromGasUploadReturn() {
       var q = new URLSearchParams(window.location.search);
-      if (!q.get('gas_cb') || q.get('gas_ok') !== '1' || !q.get('gas_data')) return;
-      var raw;
+      var status = q.get('gas_upload');
+      if (!status) return false;
+
       try {
-        raw = sessionStorage.getItem('gas_upload_state');
-      } catch (e) {
-        return;
+        history.replaceState({}, '', window.location.pathname + window.location.hash);
+      } catch (e) {}
+
+      if (status === 'fail') {
+        var errMsg = q.get('gas_err');
+        alert(errMsg ? decodeURIComponent(errMsg) : 'บันทึกโครงการไม่สำเร็จ');
+        isAdmin = true;
+        restoreAdminUI();
+        return true;
       }
-      if (!raw) return;
-      var state;
-      try {
-        state = JSON.parse(raw);
-      } catch (e2) {
-        return;
-      }
-      if (!state || state.type !== 'project' || !state.project) return;
-      try {
-        sessionStorage.removeItem('gas_upload_state');
-      } catch (e3) {}
-      var imageUrl = decodeURIComponent(q.get('gas_data'));
-      var p = state.project;
-      p.imageUrl = imageUrl || '';
+
+      if (status !== 'done') return false;
+
+      invalidateSessionCache();
+      isAdmin = true;
       showLoadingUI();
-      setLoadingMessage('กำลังบันทึกโครงการ...');
-      saveProjectWithTimeout(p, null, afterProjectSaved, handleUploadError, 25000);
+      setLoadingMessage('โหลดข้อมูลล่าสุด...');
+      loadInitialData(
+        function (data) {
+          initApp(data, { fromCache: false });
+          document.getElementById('btn-login').classList.add('hidden');
+          document.getElementById('btn-logout').classList.remove('hidden');
+          document.getElementById('btn-admin-panel').classList.remove('hidden');
+          showAdminPanel();
+          loadDashboardData();
+        },
+        function (err) {
+          handleApiError(err, 'โหลดข้อมูลไม่สำเร็จ');
+        }
+      );
+      return true;
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-      resumeProjectUploadFromRedirect();
+      if (resumeFromGasUploadReturn()) return;
       syncThemeIcon();
       loadFontAwesomeDeferred();
       loadSarabunDeferred();
@@ -986,26 +1034,11 @@ let appData = [];
       }
 
       if (croppedFileData) {
-        // Always use 2-step flow for images: upload first, then save metadata.
-        // Avoid sending big base64 inside saveProject because it can hang in some browsers.
-        setLoadingMessage('กำลังอัปโหลดรูป...');
-        try {
-          sessionStorage.setItem('gas_upload_state', JSON.stringify({ type: 'project', project: p, at: Date.now() }));
-        } catch (e) {}
-        uploadImageWithTimeout(
-          croppedFileData,
-          function (imageUrl) {
-            p.imageUrl = imageUrl || '';
-            setLoadingMessage('กำลังบันทึกโครงการ...');
-            saveProjectWithTimeout(p, null, finishProjectSave, failProjectSave, 20000);
-          },
-          function () {
-            p.imageUrl = '';
-            setLoadingMessage('อัปโหลดรูปไม่สำเร็จ กำลังบันทึกข้อมูลแบบไม่ใช้รูป...');
-            saveProjectWithTimeout(p, null, finishProjectSave, failProjectSave, 20000);
-          },
-          20000
-        );
+        flowDone = true;
+        clearTimeout(flowTimer);
+        setLoadingMessage('กำลังเปิดหน้าอัปโหลดบนเซิร์ฟเวอร์...');
+        navigateToGasUploadForProject(p, croppedFileData);
+        return;
       } else {
         setLoadingMessage('กำลังบันทึกโครงการ...');
         saveProjectWithTimeout(p, null, finishProjectSave, failProjectSave, 25000);

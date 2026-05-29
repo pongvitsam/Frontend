@@ -40,11 +40,66 @@ function redirectToPages_() {
 }
 
 
+function buildReturnUrl_(base, pairs) {
+  var u = base;
+  for (var i = 0; i < pairs.length; i++) {
+    var sep = u.indexOf('?') >= 0 ? '&' : '?';
+    u += sep + encodeURIComponent(pairs[i][0]) + '=' + encodeURIComponent(pairs[i][1]);
+  }
+  return u;
+}
+
+function redirectHtml_(url) {
+  return HtmlService.createHtmlOutput(
+    '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>' +
+    '<p style="font-family:sans-serif;text-align:center;padding:2rem">กำลังกลับหน้าเว็บ...</p>' +
+    '<script>window.top.location.replace(' + JSON.stringify(url) + ');</script></body></html>'
+  ).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function handleProjectUploadPost_(params) {
+  var returnUrl = isAllowedReturnUrl_(params.returnUrl) ? String(params.returnUrl) : PAGES_URL;
+  var project;
+  var fileData = null;
+  try {
+    project = JSON.parse(params.project || '{}');
+  } catch (e) {
+    return redirectHtml_(buildReturnUrl_(returnUrl, [
+      ['gas_upload', 'fail'],
+      ['gas_err', 'ข้อมูลโครงการไม่ถูกต้อง'],
+    ]));
+  }
+  if (params.fileData) {
+    try {
+      fileData = JSON.parse(params.fileData);
+    } catch (e2) {}
+  }
+  try {
+    var imageUrl = '';
+    if (fileData && fileData.data) {
+      imageUrl = uploadImage(fileData);
+    }
+    project.imageUrl = imageUrl || project.imageUrl || '';
+    saveProject(project, null);
+    return redirectHtml_(buildReturnUrl_(returnUrl, [['gas_upload', 'done']]));
+  } catch (err) {
+    return redirectHtml_(buildReturnUrl_(returnUrl, [
+      ['gas_upload', 'fail'],
+      ['gas_err', String(err.message || err)],
+    ]));
+  }
+}
+
 function doGet(e) {
   var params = (e && e.parameter) || {};
   if (params.page === 'bridge') {
     return HtmlService.createHtmlOutputFromFile('Bridge')
       .setTitle('GAS Bridge')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  }
+  if (params.page === 'upload') {
+    return HtmlService.createHtmlOutputFromFile('Upload')
+      .setTitle('อัปโหลดรูป')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   }
   if (params.action) {
@@ -159,6 +214,9 @@ function doPost(e) {
     }
   } else {
     params = (e && e.parameter) || {};
+  }
+  if (params.page === 'upload') {
+    return handleProjectUploadPost_(params);
   }
   var args = params.args;
   if (typeof args === 'string') {

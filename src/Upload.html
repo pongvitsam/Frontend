@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>อัปโหลดรูป</title>
+  <style>
+    body { margin: 0; min-height: 100vh; font-family: Sarabun, system-ui, sans-serif; background: #f5f3ee; color: #2c3542; display: flex; align-items: center; justify-content: center; }
+    .box { text-align: center; padding: 2rem; }
+    .spin { width: 2.5rem; height: 2.5rem; border: 3px solid #e3ddd2; border-top-color: #2c3548; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="spin"></div>
+    <p>กำลังอัปโหลดและบันทึก...</p>
+    <p style="font-size:.85rem;color:#6b7885">หากหน้านี้ค้างนาน กรุณากลับไปหน้าเว็บหลักแล้วลองใหม่</p>
+  </div>
+</body>
+</html>
