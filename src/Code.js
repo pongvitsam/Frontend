@@ -94,19 +94,37 @@ function invokeApiAction_(action, args) {
   }
 }
 
-function formatApiResponse_(payload, callback, htmlCallback) {
+function isAllowedReturnUrl_(url) {
+  if (!url) return false;
+  if (url.indexOf('https://pongvitsam.github.io/Frontend') === 0) return true;
+  if (url.indexOf('http://localhost') === 0) return true;
+  if (url.indexOf('http://127.0.0.1') === 0) return true;
+  return false;
+}
+
+function formatApiResponse_(payload, callback, htmlCallback, returnUrl) {
   var body = JSON.stringify(payload);
   if (!callback) {
     return ContentService.createTextOutput(body).setMimeType(ContentService.MimeType.JSON);
   }
   if (htmlCallback) {
     var safeCb = String(callback).replace(/[^\w$._-]/g, '');
+    var safeReturn = isAllowedReturnUrl_(returnUrl) ? String(returnUrl) : '';
+    var script =
+      '(function(){' +
+      'var p=JSON.parse(' + JSON.stringify(body) + ');' +
+      'var cb=' + JSON.stringify(safeCb) + ';' +
+      'var ru=' + JSON.stringify(safeReturn) + ';' +
+      'function send(t){try{t.postMessage({type:"gas-form-post",callback:cb,response:p},"*");return true;}catch(e){return false;}}' +
+      'if(window.opener&&!window.opener.closed&&send(window.opener)){try{window.close();}catch(e1){}return;}' +
+      'if(window.parent!==window&&send(window.parent))return;' +
+      'if(ru){var u=ru+(ru.indexOf("?")>=0?"&":"?")+"gas_cb="+encodeURIComponent(cb)+"&gas_ok="+(p.ok?"1":"0");' +
+      'if(p.ok&&typeof p.data==="string")u+="&gas_data="+encodeURIComponent(p.data);' +
+      'else if(!p.ok)u+="&gas_err="+encodeURIComponent(p.error||"API error");' +
+      'window.top.location.replace(u);}' +
+      '})();';
     return HtmlService.createHtmlOutput(
-      '<!DOCTYPE html><html><body><script>try{parent.postMessage({type:"gas-form-post",callback:"' +
-        safeCb +
-        '",response:JSON.parse(' +
-        JSON.stringify(body) +
-        ')},"*");}catch(e){}</script></body></html>'
+      '<!DOCTYPE html><html><body><script>' + script + '</script></body></html>'
     ).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   }
   return ContentService.createTextOutput(callback + '(' + body + ')')
@@ -167,7 +185,7 @@ function doPost(e) {
   } catch (err3) {
     payload = { ok: false, error: String(err3.message || err3) };
   }
-  return formatApiResponse_(payload, params.callback, true);
+  return formatApiResponse_(payload, params.callback, true, params.returnUrl);
 }
 
 // ---------------- API & Functions ----------------

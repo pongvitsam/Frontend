@@ -416,7 +416,36 @@ let appData = [];
       });
     }
 
+    function resumeProjectUploadFromRedirect() {
+      var q = new URLSearchParams(window.location.search);
+      if (!q.get('gas_cb') || q.get('gas_ok') !== '1' || !q.get('gas_data')) return;
+      var raw;
+      try {
+        raw = sessionStorage.getItem('gas_upload_state');
+      } catch (e) {
+        return;
+      }
+      if (!raw) return;
+      var state;
+      try {
+        state = JSON.parse(raw);
+      } catch (e2) {
+        return;
+      }
+      if (!state || state.type !== 'project' || !state.project) return;
+      try {
+        sessionStorage.removeItem('gas_upload_state');
+      } catch (e3) {}
+      var imageUrl = decodeURIComponent(q.get('gas_data'));
+      var p = state.project;
+      p.imageUrl = imageUrl || '';
+      showLoadingUI();
+      setLoadingMessage('กำลังบันทึกโครงการ...');
+      saveProjectWithTimeout(p, null, afterProjectSaved, handleUploadError, 25000);
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
+      resumeProjectUploadFromRedirect();
       syncThemeIcon();
       loadFontAwesomeDeferred();
       loadSarabunDeferred();
@@ -961,6 +990,9 @@ let appData = [];
         // Always use 2-step flow for images: upload first, then save metadata.
         // Avoid sending big base64 inside saveProject because it can hang in some browsers.
         setLoadingMessage('กำลังอัปโหลดรูป...');
+        try {
+          sessionStorage.setItem('gas_upload_state', JSON.stringify({ type: 'project', project: p, at: Date.now() }));
+        } catch (e) {}
         uploadImageWithTimeout(
           croppedFileData,
           function (imageUrl) {

@@ -186,6 +186,49 @@
     }, 100);
   }
 
+  function getReturnUrl() {
+    var loc = global.location;
+    if (!loc || !loc.origin) return '';
+    var path = loc.pathname || '/';
+    return loc.origin + path;
+  }
+
+  function consumeGasRedirectCallback() {
+    if (!global.location || !global.location.search) return false;
+    var q = new global.URLSearchParams(global.location.search);
+    var cb = q.get('gas_cb');
+    if (!cb) return false;
+
+    var response = { ok: q.get('gas_ok') === '1' };
+    if (response.ok && q.get('gas_data')) {
+      try {
+        response.data = decodeURIComponent(q.get('gas_data'));
+      } catch (e) {
+        response.data = q.get('gas_data');
+      }
+    } else if (!response.ok) {
+      response.error = q.get('gas_err') ? decodeURIComponent(q.get('gas_err')) : 'API error';
+    }
+
+    if (typeof global[cb] === 'function') {
+      global[cb](response);
+    }
+
+    try {
+      global.sessionStorage.removeItem('gas_form_cb_' + cb);
+    } catch (e) {}
+
+    try {
+      global.history.replaceState({}, '', global.location.pathname + global.location.hash);
+    } catch (e2) {}
+
+    try {
+      global.dispatchEvent(new global.CustomEvent('gas-form-redirect', { detail: { callback: cb, response: response } }));
+    } catch (e3) {}
+
+    return true;
+  }
+
   function callFormPost(functionName, args, success, failure) {
     var gasUrl = getGasExecUrl();
     if (!gasUrl) {
@@ -240,12 +283,27 @@
     };
     global.addEventListener('message', messageHandler);
 
-    ensureFormFrame();
+    try {
+      global.sessionStorage.setItem('gas_form_cb_' + cbName, JSON.stringify({ at: Date.now(), action: functionName }));
+    } catch (e) {}
+
+    var popupName = 'gas_upload_' + cbName;
+    var popup = null;
+    try {
+      popup = global.open('about:blank', popupName, 'width=460,height=300');
+    } catch (e2) {
+      popup = null;
+    }
 
     var form = global.document.createElement('form');
     form.method = 'POST';
     form.action = gasUrl;
-    form.target = 'gas-form-frame';
+    if (popup) {
+      form.target = popupName;
+    } else {
+      ensureFormFrame();
+      form.target = 'gas-form-frame';
+    }
     form.style.display = 'none';
     form.acceptCharset = 'UTF-8';
 
@@ -261,6 +319,7 @@
     addField('args', JSON.stringify(postArgs));
     if (filePayload) addField('fileData', JSON.stringify(filePayload));
     addField('callback', cbName);
+    addField('returnUrl', getReturnUrl());
     global.document.body.appendChild(form);
     form.submit();
     setTimeout(function () {
@@ -367,6 +426,11 @@
     if (isGasHost()) return global.google.script.run;
     return createGasProxy();
   };
+
+  if (isGitHubPagesHost()) {
+    consumeGasRedirectCallback();
+    global.addEventListener('DOMContentLoaded', consumeGasRedirectCallback);
+  }
 
   // Bridge is initialized lazily and currently disabled by shouldUseBridge().
 })(typeof window !== 'undefined' ? window : this);
