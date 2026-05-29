@@ -56,18 +56,69 @@ function escapeHtmlAttr_(value) {
     .replace(/</g, '&lt;');
 }
 
-function redirectHtml_(url) {
-  var safeAttr = escapeHtmlAttr_(url);
-  return HtmlService.createHtmlOutput(
-    '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
-    '<meta http-equiv="refresh" content="0;url=' + safeAttr + '">' +
-    '</head><body style="font-family:sans-serif;text-align:center;padding:2rem">' +
-    '<p>กำลังกลับหน้าเว็บ...</p>' +
-    '<p><a id="back" href="' + safeAttr + '">คลิกที่นี่หากไม่ถูกนำกลับอัตโนมัติ</a></p>' +
-    '<script>(function(){var u=' + JSON.stringify(url) + ';' +
-    'function go(){try{window.location.replace(u);}catch(e){window.location.href=u;}}' +
-    'go();setTimeout(go,400);})();</script></body></html>'
-  ).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+function escapeHtmlText_(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+/**
+ * หน้าผลลัพธ์หลังอัปโหลด — ผู้ใช้ต้องคลิกลิงก์กลับ (user activation)
+ * ห้าม meta refresh / window.top.location — จะ error ใน sandbox iframe
+ * (ทดสอบใน Apps Script Editor อาจเห็น userCodeAppPanel?createOAuthDialog;
+ *  production ใช้ URL /macros/s/.../exec ไม่ใช้ userCodeAppPanel)
+ */
+function userNavigationHtml_(returnUrl, options) {
+  options = options || {};
+  var isSuccess = options.success !== false;
+  var title = options.title || (isSuccess ? 'บันทึกสำเร็จ' : 'บันทึกไม่สำเร็จ');
+  var message = options.message || (isSuccess
+    ? 'โครงการและรูปภาพถูกบันทึกแล้ว กรุณากดปุ่มด้านล่างเพื่อกลับหน้าเว็บหลัก'
+    : 'เกิดข้อผิดพลาด กรุณากดปุ่มด้านล่างเพื่อกลับและลองใหม่');
+  var linkText = options.linkText || 'กลับหน้าเว็บหลัก';
+  var safeHref = escapeHtmlAttr_(returnUrl);
+  var icon = isSuccess ? '&#10003;' : '!';
+  var iconBg = isSuccess ? '#e8f0e8' : '#fff4e8';
+  var iconColor = isSuccess ? '#2c5c3a' : '#9a5c38';
+  var extraScript = options.inlineScript || '';
+
+  var html =
+    '<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">' +
+    '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+    '<title>' + escapeHtmlText_(title) + '</title>' +
+    '<style>' +
+    'body{margin:0;min-height:100vh;font-family:Sarabun,system-ui,sans-serif;' +
+    'background:linear-gradient(165deg,#f5f3ee 0%,#e8e2d8 100%);color:#2c3542;' +
+    'display:flex;align-items:center;justify-content:center;padding:1.5rem;box-sizing:border-box}' +
+    '.card{max-width:28rem;width:100%;background:#fff;border-radius:1.25rem;padding:2rem 1.75rem;' +
+    'box-shadow:0 20px 44px -14px rgba(44,53,66,.18);border:1px solid #e3ddd2;text-align:center}' +
+    '.icon{width:3.5rem;height:3.5rem;line-height:3.5rem;border-radius:50%;margin:0 auto 1rem;' +
+    'font-size:1.4rem;font-weight:700;background:' + iconBg + ';color:' + iconColor + '}' +
+    'h1{font-size:1.3rem;margin:0 0 .5rem;font-weight:700}' +
+    'p{font-size:.95rem;line-height:1.65;color:#6b7885;margin:0 0 1.5rem}' +
+    'a.btn{display:block;width:100%;padding:1rem 1.25rem;border-radius:9999px;background:#2c3548;' +
+    'color:#fff!important;font-size:1.08rem;font-weight:600;text-decoration:none;box-sizing:border-box}' +
+    'a.btn:hover{background:#8b7355}' +
+    '.hint{font-size:.82rem;color:#9aa5b0;margin-top:1rem;line-height:1.5}' +
+    '</style></head><body><div class="card">' +
+    '<div class="icon">' + icon + '</div>' +
+    '<h1>' + escapeHtmlText_(title) + '</h1>' +
+    '<p>' + escapeHtmlText_(message) + '</p>' +
+    '<a class="btn" href="' + safeHref + '" target="_top" rel="noopener">' + escapeHtmlText_(linkText) + '</a>' +
+    '<p class="hint">หากหน้าไม่กลับอัตโนมัติ กรุณากดปุ่มด้านบน</p>' +
+    '</div><script>(function(){' + extraScript +
+    'var u=' + JSON.stringify(returnUrl) + ';' +
+    'if(window.self===window.top){try{window.location.replace(u);}catch(e){}}' +
+    '})();</script></body></html>';
+
+  return HtmlService.createHtmlOutput(html)
+    .setTitle(title)
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function uploadResultHtml_(returnUrl, options) {
+  return userNavigationHtml_(returnUrl, options);
 }
 
 function handleProjectUploadPost_(params) {
@@ -77,10 +128,10 @@ function handleProjectUploadPost_(params) {
   try {
     project = JSON.parse(params.project || '{}');
   } catch (e) {
-    return redirectHtml_(buildReturnUrl_(returnUrl, [
+    return uploadResultHtml_(buildReturnUrl_(returnUrl, [
       ['gas_upload', 'fail'],
       ['gas_err', 'ข้อมูลโครงการไม่ถูกต้อง'],
-    ]));
+    ]), { success: false, message: 'ข้อมูลโครงการไม่ถูกต้อง' });
   }
   if (params.fileData) {
     try {
@@ -94,12 +145,18 @@ function handleProjectUploadPost_(params) {
     }
     project.imageUrl = imageUrl || project.imageUrl || '';
     saveProject(project, null);
-    return redirectHtml_(buildReturnUrl_(returnUrl, [['gas_upload', 'done']]));
+    return uploadResultHtml_(buildReturnUrl_(returnUrl, [['gas_upload', 'done']]), {
+      success: true,
+      message: 'โครงการและรูปภาพถูกบันทึกแล้ว กรุณากดปุ่มด้านล่างเพื่อกลับหน้าเว็บหลัก',
+    });
   } catch (err) {
-    return redirectHtml_(buildReturnUrl_(returnUrl, [
+    return uploadResultHtml_(buildReturnUrl_(returnUrl, [
       ['gas_upload', 'fail'],
       ['gas_err', String(err.message || err)],
-    ]));
+    ]), {
+      success: false,
+      message: String(err.message || err),
+    });
   }
 }
 
@@ -178,22 +235,37 @@ function formatApiResponse_(payload, callback, htmlCallback, returnUrl) {
   if (htmlCallback) {
     var safeCb = String(callback).replace(/[^\w$._-]/g, '');
     var safeReturn = isAllowedReturnUrl_(returnUrl) ? String(returnUrl) : '';
-    var script =
-      '(function(){' +
+    var fullUrl = '';
+    if (safeReturn) {
+      fullUrl = safeReturn + (safeReturn.indexOf('?') >= 0 ? '&' : '?') +
+        'gas_cb=' + encodeURIComponent(safeCb) +
+        '&gas_ok=' + (payload.ok ? '1' : '0');
+      if (payload.ok && typeof payload.data === 'string') {
+        fullUrl += '&gas_data=' + encodeURIComponent(payload.data);
+      } else if (!payload.ok) {
+        fullUrl += '&gas_err=' + encodeURIComponent(payload.error || 'API error');
+      }
+    }
+    var postMsgScript =
       'var p=JSON.parse(' + JSON.stringify(body) + ');' +
       'var cb=' + JSON.stringify(safeCb) + ';' +
-      'var ru=' + JSON.stringify(safeReturn) + ';' +
       'function send(t){try{t.postMessage({type:"gas-form-post",callback:cb,response:p},"*");return true;}catch(e){return false;}}' +
-      'if(window.opener&&!window.opener.closed&&send(window.opener)){try{window.close();}catch(e1){}return;}' +
-      'if(window.parent!==window&&send(window.parent))return;' +
-      'if(ru){var u=ru+(ru.indexOf("?")>=0?"&":"?")+"gas_cb="+encodeURIComponent(cb)+"&gas_ok="+(p.ok?"1":"0");' +
-      'if(p.ok&&typeof p.data==="string")u+="&gas_data="+encodeURIComponent(p.data);' +
-      'else if(!p.ok)u+="&gas_err="+encodeURIComponent(p.error||"API error");' +
-      'try{window.location.replace(u);}catch(e3){window.location.href=u;}}' +
-      '})();';
-    return HtmlService.createHtmlOutput(
-      '<!DOCTYPE html><html><body><script>' + script + '</script></body></html>'
-    ).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+      'if(window.opener&&!window.opener.closed&&send(window.opener)){try{window.close();}catch(e1){return;}}' +
+      'if(window.parent!==window&&send(window.parent))return;';
+    if (!fullUrl) {
+      return HtmlService.createHtmlOutput(
+        '<!DOCTYPE html><html lang="th"><body><p>ดำเนินการเสร็จแล้ว</p><script>' +
+        postMsgScript + '</script></body></html>'
+      ).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    }
+    return userNavigationHtml_(fullUrl, {
+      success: payload.ok,
+      title: payload.ok ? 'ดำเนินการสำเร็จ' : 'ดำเนินการไม่สำเร็จ',
+      message: payload.ok
+        ? 'กรุณากดปุ่มด้านล่างเพื่อกลับหน้าเว็บหลัก'
+        : String(payload.error || 'กรุณากดปุ่มด้านล่างเพื่อกลับและลองใหม่'),
+      inlineScript: postMsgScript,
+    });
   }
   return ContentService.createTextOutput(callback + '(' + body + ')')
     .setMimeType(ContentService.MimeType.JAVASCRIPT);

@@ -462,6 +462,7 @@ let appData = [];
       return (loc.origin || '') + (loc.pathname || '/');
     }
 
+    /** Full-page POST to production /exec (target _top). ห้ามทดสอบผ่าน Apps Script Editor — จะอยู่ใน userCodeAppPanel sandbox */
     function navigateToGasUploadForProject(project, fileData) {
       var gasUrl = getGasExecUrl();
       if (!gasUrl) {
@@ -489,7 +490,7 @@ let appData = [];
       addField('project', JSON.stringify(project));
       addField('fileData', JSON.stringify(fileData));
       document.body.appendChild(form);
-      setLoadingMessage('กำลังอัปโหลดบนเซิร์ฟเวอร์...');
+      setLoadingMessage('กำลังอัปโหลดบนเซิร์ฟเวอร์... หลังเสร็จให้กดปุ่ม "กลับหน้าเว็บหลัก"');
       form.submit();
     }
 
