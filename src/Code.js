@@ -204,6 +204,10 @@ function invokeApiAction_(action, args) {
       return deleteProject(args[0]);
     case 'reorderApps':
       return reorderApps(args[0]);
+    case 'resetAppClicks':
+      return resetAppClicks(args[0]);
+    case 'resetAllAppClicks':
+      return resetAllAppClicks();
     case 'uploadImage':
       return uploadImage(args[0]);
     case 'saveProject':
@@ -686,6 +690,34 @@ function deleteProject(projectId) {
   
   clearAppCache(); // ล้างคุกกี้เพื่อให้ข้อมูลอัปเดตทันที
   return getApps(); // ส่งรายการแอพใหม่กลับไปให้หน้าเว็บ
+}
+
+function resetAppClicks(appId) {
+  const sheet = getSpreadsheet_().getSheetByName('Apps');
+  const lastRow = Math.max(sheet.getLastRow(), 1);
+  if (lastRow < 2) return getApps();
+
+  const idValues = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+  for (let i = 0; i < idValues.length; i++) {
+    if (String(idValues[i][0]) === String(appId)) {
+      sheet.getRange(i + 2, 6).setValue(0);
+      break;
+    }
+  }
+
+  clearAppCache();
+  return getApps();
+}
+
+function resetAllAppClicks() {
+  const sheet = getSpreadsheet_().getSheetByName('Apps');
+  const lastRow = Math.max(sheet.getLastRow(), 1);
+  if (lastRow >= 2) {
+    sheet.getRange(2, 6, lastRow - 1, 1).setValue(0);
+  }
+
+  clearAppCache();
+  return getApps();
 }
 
 function warmupAppCache() {

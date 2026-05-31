@@ -777,6 +777,7 @@ let appData = [];
         const adminControls = isAdmin
           ? '<div class="flex items-center gap-3">' +
               '<span class="text-xs text-[#8a96a3] dark:text-[#b8c0c8] bg-[#f5f3ee] dark:bg-[#121820] px-2.5 py-1 rounded-full transition-colors"><i class="fa-solid fa-chart-simple mr-1"></i> ' + app.clicks + '</span>' +
+              '<button type="button" onclick="event.stopPropagation(); resetAppClicks(\'' + escJs(app.id) + '\', \'' + escJs(app.name) + '\')" class="text-[#6b7885] hover:text-[#8b7355] transition" title="รีเซตจำนวนการกด"><i class="fa-solid fa-rotate-left text-lg"></i></button>' +
               '<button type="button" onclick="event.stopPropagation(); editApp(\'' + escJs(app.id) + '\')" class="text-[#2c3548] hover:text-[#8b7355] transition" title="แก้ไข"><i class="fa-solid fa-pen-to-square text-lg"></i></button>' +
               '<button type="button" onclick="event.stopPropagation(); deleteApp(\'' + escJs(app.id) + '\')" class="text-[#9a7b6a] hover:text-[#7d5e52] transition" title="ลบ"><i class="fa-solid fa-trash text-lg"></i></button>' +
             '</div>'
@@ -1079,7 +1080,98 @@ let appData = [];
         saveProjectWithTimeout(p, null, finishProjectSave, failProjectSave, 25000);
       }
     }
-      async function deleteApp(id) {
+    function applyAppsAfterClickReset(res) {
+      invalidateSessionCache();
+      appData = res;
+      renderApps();
+      loadDashboardData();
+    }
+
+    async function resetAppClicks(id, name) {
+      try {
+        await ensureSwalReady();
+      } catch (e) {
+        if (!confirm('รีเซตจำนวนการกดของ "' + name + '" เป็น 0?')) return;
+        gasRun()
+          .withSuccessHandler(applyAppsAfterClickReset)
+          .withFailureHandler(function (err) { handleApiError(err, 'รีเซตไม่สำเร็จ'); })
+          .resetAppClicks(id);
+        return;
+      }
+      Swal.fire({
+        title: 'รีเซตจำนวนการกด?',
+        text: 'โปรแกรม "' + name + '" จะกลับเป็น 0 ครั้ง',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#2c3548',
+        cancelButtonColor: '#6b7885',
+        confirmButtonText: 'รีเซต',
+        cancelButtonText: 'ยกเลิก',
+        background: document.documentElement.classList.contains('dark') ? '#1a2029' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#f5f3ee' : '#1f2933',
+      }).then(function (result) {
+        if (!result.isConfirmed) return;
+        gasRun()
+          .withSuccessHandler(function (res) {
+            applyAppsAfterClickReset(res);
+            Swal.fire({
+              title: 'รีเซตแล้ว',
+              text: 'จำนวนการกดของ "' + name + '" เป็น 0 แล้ว',
+              icon: 'success',
+              confirmButtonColor: '#2c3548',
+              background: document.documentElement.classList.contains('dark') ? '#1a2029' : '#ffffff',
+              color: document.documentElement.classList.contains('dark') ? '#f5f3ee' : '#1f2933',
+            });
+          })
+          .withFailureHandler(function (err) { handleApiError(err, 'รีเซตไม่สำเร็จ'); })
+          .resetAppClicks(id);
+      });
+    }
+    window.resetAppClicks = resetAppClicks;
+
+    async function resetAllAppClicks() {
+      try {
+        await ensureSwalReady();
+      } catch (e) {
+        if (!confirm('รีเซตจำนวนการกดของทุกโปรแกรมเป็น 0?')) return;
+        gasRun()
+          .withSuccessHandler(applyAppsAfterClickReset)
+          .withFailureHandler(function (err) { handleApiError(err, 'รีเซตไม่สำเร็จ'); })
+          .resetAllAppClicks();
+        return;
+      }
+      Swal.fire({
+        title: 'รีเซตสถิติทั้งหมด?',
+        text: 'จำนวนการกดของทุกโปรแกรมจะกลับเป็น 0',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#9a7b6a',
+        cancelButtonColor: '#2c3548',
+        confirmButtonText: 'รีเซตทั้งหมด',
+        cancelButtonText: 'ยกเลิก',
+        background: document.documentElement.classList.contains('dark') ? '#1a2029' : '#ffffff',
+        color: document.documentElement.classList.contains('dark') ? '#f5f3ee' : '#1f2933',
+      }).then(function (result) {
+        if (!result.isConfirmed) return;
+        gasRun()
+          .withSuccessHandler(function (res) {
+            applyAppsAfterClickReset(res);
+            Swal.fire({
+              title: 'รีเซตแล้ว',
+              text: 'สถิติการกดทุกโปรแกรมเป็น 0 แล้ว',
+              icon: 'success',
+              confirmButtonColor: '#2c3548',
+              background: document.documentElement.classList.contains('dark') ? '#1a2029' : '#ffffff',
+              color: document.documentElement.classList.contains('dark') ? '#f5f3ee' : '#1f2933',
+            });
+          })
+          .withFailureHandler(function (err) { handleApiError(err, 'รีเซตไม่สำเร็จ'); })
+          .resetAllAppClicks();
+      });
+    }
+    window.resetAllAppClicks = resetAllAppClicks;
+
+    async function deleteApp(id) {
       try {
         await ensureSwalReady();
       } catch (e) {

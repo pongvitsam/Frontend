@@ -150,7 +150,12 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div class="lg:col-span-2 glass-card p-8 rounded-3xl h-96 flex flex-col">
-        <h2 class="lux-section-title text-xl font-semibold mb-4">สถิติการใช้งาน</h2>
+        <h2 class="lux-section-title text-xl font-semibold mb-4 flex flex-wrap items-center justify-between gap-2">
+          <span>สถิติการใช้งาน</span>
+          <button type="button" onclick="resetAllAppClicks()" class="btn-admin-outline px-3 py-1.5 rounded-full text-xs">
+            <i class="fa-solid fa-rotate-left mr-1"></i> รีเซตทั้งหมด
+          </button>
+        </h2>
         <div class="flex-grow relative w-full h-full">
           <canvas id="usageChart"></canvas>
         </div>

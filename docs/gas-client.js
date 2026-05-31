@@ -11,6 +11,8 @@
     updateBanner: 2,
     deleteProject: 1,
     reorderApps: 1,
+    resetAppClicks: 1,
+    resetAllAppClicks: 0,
     saveProject: 2,
     setSettingImage: 2,
   };
