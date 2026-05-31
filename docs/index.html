@@ -18,17 +18,22 @@
   <script>
   (function () {
     var LS_KEY = 'pk2_initial_ls_v2';
+    var SS_KEY = 'pk2_initial_v5';
     var GAS_API = 'https://script.google.com/macros/s/AKfycby8V8L2CRZINAgkEcqfwjduA8w_7Yrl9t5AoQmISqtzq9BsghYbVjKOlZHvMuZdVUsagw/exec';
-    var MAX_AGE = 86400000;
+    var LS_MAX_AGE = 86400000;
+    var SS_MAX_AGE = 480000;
+
+    function hydrateFromEnvelope(raw, maxAge) {
+      if (!raw) return null;
+      var o = JSON.parse(raw);
+      if (o && o.data && o.data.apps && Date.now() - o.t < maxAge) return o.data;
+      return null;
+    }
 
     try {
-      var raw = localStorage.getItem(LS_KEY);
-      if (raw) {
-        var o = JSON.parse(raw);
-        if (o && o.data && o.data.apps && Date.now() - o.t < MAX_AGE) {
-          window.__BOOT_DATA__ = o.data;
-        }
-      }
+      var boot = hydrateFromEnvelope(localStorage.getItem(LS_KEY), LS_MAX_AGE);
+      if (!boot) boot = hydrateFromEnvelope(sessionStorage.getItem(SS_KEY), SS_MAX_AGE);
+      if (boot) window.__BOOT_DATA__ = boot;
     } catch (e) {}
 
     var cb = '__pf_' + Date.now();
@@ -39,7 +44,9 @@
       if (res && res.ok && res.data) {
         window.__PREFETCH_DATA__ = res.data;
         try {
-          localStorage.setItem(LS_KEY, JSON.stringify({ t: Date.now(), data: res.data }));
+          var envelope = { t: Date.now(), data: res.data };
+          localStorage.setItem(LS_KEY, JSON.stringify(envelope));
+          sessionStorage.setItem(SS_KEY, JSON.stringify(envelope));
         } catch (e) {}
         try {
           window.dispatchEvent(new CustomEvent('pk2-prefetch-ready', { detail: res.data }));
@@ -59,7 +66,10 @@
   })();
   </script>
 
-  <link rel="stylesheet" href="styles.css?v=34">
+  <link rel="preload" href="config.js?v=35" as="script">
+  <link rel="preload" href="gas-client.js?v=35" as="script">
+  <link rel="preload" href="app.js?v=35" as="script">
+  <link rel="stylesheet" href="styles.css?v=35">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
@@ -268,8 +278,8 @@
       </div>
     </div>
   </div>
-  <script src="config.js?v=34"></script>
-  <script src="gas-client.js?v=34"></script>
-  <script src="app.js?v=34"></script>
+  <script src="config.js?v=35"></script>
+  <script src="gas-client.js?v=35"></script>
+  <script src="app.js?v=35"></script>
 </body>
 </html>

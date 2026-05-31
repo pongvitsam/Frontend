@@ -16,17 +16,22 @@
   <script>
   (function () {
     var LS_KEY = 'pk2_initial_ls_v2';
+    var SS_KEY = 'pk2_initial_v5';
     var GAS_API = 'https://script.google.com/macros/s/AKfycby8V8L2CRZINAgkEcqfwjduA8w_7Yrl9t5AoQmISqtzq9BsghYbVjKOlZHvMuZdVUsagw/exec';
-    var MAX_AGE = 86400000;
+    var LS_MAX_AGE = 86400000;
+    var SS_MAX_AGE = 480000;
+
+    function hydrateFromEnvelope(raw, maxAge) {
+      if (!raw) return null;
+      var o = JSON.parse(raw);
+      if (o && o.data && o.data.apps && Date.now() - o.t < maxAge) return o.data;
+      return null;
+    }
 
     try {
-      var raw = localStorage.getItem(LS_KEY);
-      if (raw) {
-        var o = JSON.parse(raw);
-        if (o && o.data && o.data.apps && Date.now() - o.t < MAX_AGE) {
-          window.__BOOT_DATA__ = o.data;
-        }
-      }
+      var boot = hydrateFromEnvelope(localStorage.getItem(LS_KEY), LS_MAX_AGE);
+      if (!boot) boot = hydrateFromEnvelope(sessionStorage.getItem(SS_KEY), SS_MAX_AGE);
+      if (boot) window.__BOOT_DATA__ = boot;
     } catch (e) {}
 
     var cb = '__pf_' + Date.now();
@@ -37,7 +42,9 @@
       if (res && res.ok && res.data) {
         window.__PREFETCH_DATA__ = res.data;
         try {
-          localStorage.setItem(LS_KEY, JSON.stringify({ t: Date.now(), data: res.data }));
+          var envelope = { t: Date.now(), data: res.data };
+          localStorage.setItem(LS_KEY, JSON.stringify(envelope));
+          sessionStorage.setItem(SS_KEY, JSON.stringify(envelope));
         } catch (e) {}
         try {
           window.dispatchEvent(new CustomEvent('pk2-prefetch-ready', { detail: res.data }));

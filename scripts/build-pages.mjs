@@ -102,6 +102,9 @@ const pagesIndex = `<!DOCTYPE html>
   ${faviconTags}
   ${themeScript}
 ${instantBoot}
+  <link rel="preload" href="config.js?v=${ASSET_V}" as="script">
+  <link rel="preload" href="gas-client.js?v=${ASSET_V}" as="script">
+  <link rel="preload" href="app.js?v=${ASSET_V}" as="script">
   <link rel="stylesheet" href="styles.css?v=${ASSET_V}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

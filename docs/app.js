@@ -76,6 +76,7 @@ let appData = [];
     var SESSION_CACHE_MS = 8 * 60 * 1000;
     var LOCAL_CACHE_KEY = 'pk2_initial_ls_v2';
     var LOCAL_CACHE_MS = 24 * 60 * 60 * 1000;
+    var PREFETCH_WAIT_MS = 2000;
     var GAS_EXEC_FALLBACK = 'https://script.google.com/macros/s/AKfycby8V8L2CRZINAgkEcqfwjduA8w_7Yrl9t5AoQmISqtzq9BsghYbVjKOlZHvMuZdVUsagw/exec';
     var bootFinished = false;
     var memoryCachePayload = null;
@@ -225,6 +226,41 @@ let appData = [];
       await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js');
     }
 
+    function scheduleBackgroundRefresh() {
+      var run = function () { refreshDataInBackground(); };
+      if (typeof requestIdleCallback === 'function') {
+        requestIdleCallback(run, { timeout: 3500 });
+      } else {
+        setTimeout(run, 1200);
+      }
+    }
+
+    function waitForPrefetchOrTimeout(cb, timeoutMs) {
+      if (window.__PREFETCH_DATA__ && window.__PREFETCH_DATA__.apps) {
+        cb(window.__PREFETCH_DATA__);
+        return;
+      }
+      var settled = false;
+      function done(data) {
+        if (settled) return;
+        settled = true;
+        cb(data || null);
+      }
+      var timer = setTimeout(function () { done(null); }, timeoutMs || PREFETCH_WAIT_MS);
+      window.addEventListener('pk2-prefetch-ready', function (ev) {
+        clearTimeout(timer);
+        done(ev.detail);
+      }, { once: true });
+    }
+
+    function runWhenDomReady(fn) {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', fn, { once: true });
+      } else {
+        fn();
+      }
+    }
+
     function refreshDataInBackground() {
       loadInitialData(
         function (data) { initApp(data, { silent: true, fromCache: false }); },
@@ -365,40 +401,49 @@ let appData = [];
         bootFinished = true;
         initApp(pending, { fromCache: true });
         cleanupLegacyServiceWorker();
-        refreshDataInBackground();
+        scheduleBackgroundRefresh();
         return;
       }
       if (tryHydrateFromCache()) {
         bootFinished = true;
         cleanupLegacyServiceWorker();
-        refreshDataInBackground();
+        scheduleBackgroundRefresh();
         return;
       }
       var retryBtnTimer = setTimeout(function () {
         var btn = document.getElementById('btn-retry-load');
         if (btn) btn.classList.remove('hidden');
       }, 5000);
-      fetchInitialWithRetry(
-        function (data) {
+      waitForPrefetchOrTimeout(function (prefetched) {
+        if (prefetched && prefetched.apps) {
           clearTimeout(retryBtnTimer);
           bootFinished = true;
-          initApp(data, { fromCache: false });
+          initApp(prefetched, { fromCache: false });
           cleanupLegacyServiceWorker();
-        },
-        function (err) {
-          clearTimeout(retryBtnTimer);
-          console.error(err);
-          if (!tryStaleCacheFallback()) {
-            showLoadError('โหลดข้อมูลไม่สำเร็จ — กดปุ่มด้านล่างหรือ Ctrl+Shift+R');
-            var btn = document.getElementById('btn-retry-load');
-            if (btn) btn.classList.remove('hidden');
-          } else {
-            bootFinished = true;
-            cleanupLegacyServiceWorker();
-            refreshDataInBackground();
-          }
+          return;
         }
-      );
+        fetchInitialWithRetry(
+          function (data) {
+            clearTimeout(retryBtnTimer);
+            bootFinished = true;
+            initApp(data, { fromCache: false });
+            cleanupLegacyServiceWorker();
+          },
+          function (err) {
+            clearTimeout(retryBtnTimer);
+            console.error(err);
+            if (!tryStaleCacheFallback()) {
+              showLoadError('โหลดข้อมูลไม่สำเร็จ — กดปุ่มด้านล่างหรือ Ctrl+Shift+R');
+              var btn = document.getElementById('btn-retry-load');
+              if (btn) btn.classList.remove('hidden');
+            } else {
+              bootFinished = true;
+              cleanupLegacyServiceWorker();
+              scheduleBackgroundRefresh();
+            }
+          }
+        );
+      }, PREFETCH_WAIT_MS);
     }
 
     function retryLoadData() {
@@ -535,7 +580,7 @@ let appData = [];
       return true;
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
+    runWhenDomReady(function() {
       if (resumeFromGasUploadReturn()) return;
       syncThemeIcon();
       loadFontAwesomeDeferred();
@@ -763,8 +808,8 @@ let appData = [];
       var cardsHtml = '';
       sortedApps.forEach(function (app, cardIndex) {
         const isReady = app.status === 'พร้อมใช้งาน';
-        const imgLoading = cardIndex < 4 ? 'eager' : 'lazy';
-        const imgPriority = cardIndex < 4 ? 'high' : 'low';
+        const imgLoading = cardIndex < 8 ? 'eager' : 'lazy';
+        const imgPriority = cardIndex < 8 ? 'high' : 'low';
         const cardClass = isReady ? 'lux-app-card--active' : 'lux-app-card--disabled';
         const badgeClass = isReady ? 'app-card-badge app-card-badge--ready' : 'app-card-badge app-card-badge--wait';
         const imgUrl = thumbUrl(app.imageUrl);
@@ -809,8 +854,12 @@ let appData = [];
     }
 
     function openApp(id, name, url, isReady) {
-      if (!isReady) return; 
-      gasRun().recordClick(id, name);
+      if (!isReady) return;
+      if (!isAdmin) {
+        gasRun().recordClick(id, name);
+        const appIndex = appData.findIndex(function (a) { return a.id == id; });
+        if (appIndex > -1) appData[appIndex].clicks++;
+      }
       const userEmail = document.getElementById('user-email').innerText;
       let targetUrl = url;
       if (userEmail && userEmail !== "ผู้ใช้งานทั่วไป" && userEmail !== "") {
@@ -818,8 +867,6 @@ let appData = [];
         targetUrl = url + separator + 'user_email=' + encodeURIComponent(userEmail);
       }
       window.open(targetUrl, '_blank');
-      const appIndex = appData.findIndex(a => a.id == id);
-      if(appIndex > -1) { appData[appIndex].clicks++; if(isAdmin) renderApps(); }
     }
 
     // --- ระบบตัดรูปภาพ (Cropper) ---
