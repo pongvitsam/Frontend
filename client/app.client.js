@@ -268,21 +268,111 @@ let appData = [];
       );
     }
 
-    function purgeStaleCachesAsync(expectedV) {
+    function rememberAssetVersion(expectedV) {
       try { localStorage.setItem('pk2_asset_v', expectedV); } catch (e) {}
-      var p = Promise.resolve();
-      if ('caches' in window) {
-        p = caches.keys().then(function (keys) {
-          return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+    }
+
+    function isGitHubPagesHost() {
+      var host = window.location && window.location.hostname;
+      return host === 'pongvitsam.github.io' || (host && host.endsWith('.github.io'));
+    }
+
+    function canUsePwa() {
+      if (!window.isSecureContext) return false;
+      var host = window.location && window.location.hostname;
+      if (!host) return false;
+      if (isGitHubPagesHost()) return true;
+      return host === 'localhost' || host === '127.0.0.1';
+    }
+
+    function isMobileClient() {
+      var ua = window.navigator.userAgent || '';
+      return isIosDevice() || /android/i.test(ua)
+        || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+    }
+
+    function isStandalonePwa() {
+      return (window.matchMedia && (
+        window.matchMedia('(display-mode: standalone)').matches
+        || window.matchMedia('(display-mode: fullscreen)').matches
+        || window.matchMedia('(display-mode: minimal-ui)').matches
+      )) || window.navigator.standalone === true;
+    }
+
+    function isIosDevice() {
+      var ua = window.navigator.userAgent || '';
+      return /iphone|ipad|ipod/i.test(ua)
+        || (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
+    }
+
+    function registerPwaServiceWorker() {
+      if (!canUsePwa() || !('serviceWorker' in navigator)) return;
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    }
+
+    function dismissPwaInstall() {
+      try { localStorage.setItem('pk2_pwa_dismissed', '1'); } catch (e) {}
+      var bar = document.getElementById('pwa-install-bar');
+      if (bar) bar.classList.add('hidden');
+    }
+
+    function showPwaInstallBar(deferredPrompt) {
+      if (document.getElementById('pwa-install-bar')) return;
+      var ios = isIosDevice();
+      var bar = document.createElement('div');
+      bar.id = 'pwa-install-bar';
+      bar.className = 'pwa-install-bar';
+      bar.setAttribute('role', 'dialog');
+      bar.setAttribute('aria-label', 'ติดตั้งแอป');
+      var title = ios ? 'เพิ่มไปที่หน้าจอโฮม' : 'ติดตั้งแอปบนมือถือ';
+      var sub = ios
+        ? 'แตะปุ่มแชร์ แล้วเลือก “เพิ่มไปที่หน้าจอโฮม” เพื่อเปิดได้ทันที'
+        : 'ติดตั้งแล้วเปิดจากหน้าจอหลักได้เลย ไม่ต้องรอโหลดใหม่';
+      bar.innerHTML =
+        '<div class="pwa-install-copy">' +
+          '<span class="pwa-install-title">' + title + '</span>' +
+          '<span class="pwa-install-sub">' + sub + '</span>' +
+        '</div>' +
+        '<div class="pwa-install-actions">' +
+          (deferredPrompt ? '<button type="button" class="pwa-install-btn" id="pwa-install-btn">ติดตั้ง</button>' : '') +
+          '<button type="button" class="pwa-install-close" id="pwa-install-close" aria-label="ปิด">×</button>' +
+        '</div>';
+      document.body.appendChild(bar);
+      var closeBtn = document.getElementById('pwa-install-close');
+      if (closeBtn) closeBtn.addEventListener('click', dismissPwaInstall);
+      var installBtn = document.getElementById('pwa-install-btn');
+      if (installBtn && deferredPrompt) {
+        installBtn.addEventListener('click', function () {
+          deferredPrompt.prompt();
+          deferredPrompt.userChoice.then(function () {
+            window.__PK2_PWA_PROMPT__ = null;
+            dismissPwaInstall();
+          }).catch(function () {
+            dismissPwaInstall();
+          });
         });
       }
-      p.then(function () {
-        if ('serviceWorker' in navigator) {
-          return navigator.serviceWorker.getRegistrations().then(function (regs) {
-            return Promise.all(regs.map(function (r) { return r.unregister(); }));
-          });
-        }
-      }).catch(function () {});
+    }
+
+    function setupPwaInstallPrompt() {
+      if (!canUsePwa() || isStandalonePwa() || !isMobileClient()) return;
+      try {
+        if (localStorage.getItem('pk2_pwa_dismissed') === '1') return;
+      } catch (e) {}
+
+      window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        window.__PK2_PWA_PROMPT__ = e;
+        showPwaInstallBar(e);
+      });
+      window.addEventListener('appinstalled', function () {
+        dismissPwaInstall();
+      });
+      if (isIosDevice()) {
+        setTimeout(function () {
+          if (!isStandalonePwa()) showPwaInstallBar(null);
+        }, 1800);
+      }
     }
 
     function getGasExecUrl() {
@@ -381,32 +471,17 @@ let appData = [];
       }).getInitialData();
     }
 
-    function cleanupLegacyServiceWorker() {
-      if ('caches' in window) {
-        caches.keys().then(function (keys) {
-          return Promise.all(keys.map(function (k) { return caches.delete(k); }));
-        }).catch(function () {});
-      }
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function (regs) {
-          return Promise.all(regs.map(function (r) { return r.unregister(); }));
-        }).catch(function () {});
-      }
-    }
-
     function startApplicationBoot() {
       if (bootFinished) return;
       var pending = window.__PK2_PENDING_DATA__ || window.__PREFETCH_DATA__ || window.__BOOT_DATA__;
       if (pending && pending.apps) {
         bootFinished = true;
         initApp(pending, { fromCache: true });
-        cleanupLegacyServiceWorker();
         scheduleBackgroundRefresh();
         return;
       }
       if (tryHydrateFromCache()) {
         bootFinished = true;
-        cleanupLegacyServiceWorker();
         scheduleBackgroundRefresh();
         return;
       }
@@ -419,7 +494,6 @@ let appData = [];
           clearTimeout(retryBtnTimer);
           bootFinished = true;
           initApp(prefetched, { fromCache: false });
-          cleanupLegacyServiceWorker();
           return;
         }
         fetchInitialWithRetry(
@@ -427,7 +501,6 @@ let appData = [];
             clearTimeout(retryBtnTimer);
             bootFinished = true;
             initApp(data, { fromCache: false });
-            cleanupLegacyServiceWorker();
           },
           function (err) {
             clearTimeout(retryBtnTimer);
@@ -438,7 +511,6 @@ let appData = [];
               if (btn) btn.classList.remove('hidden');
             } else {
               bootFinished = true;
-              cleanupLegacyServiceWorker();
               scheduleBackgroundRefresh();
             }
           }
@@ -586,16 +658,14 @@ let appData = [];
       loadFontAwesomeDeferred();
       loadSarabunDeferred();
       initSortDropdown();
-      cleanupLegacyServiceWorker();
+      registerPwaServiceWorker();
+      setupPwaInstallPrompt();
       try {
         localStorage.removeItem('pk2_initial_ls_v1');
         sessionStorage.removeItem('pk2_initial_v4');
       } catch (e) {}
       var expectedV = (window.APP_CONFIG && window.APP_CONFIG.assetVersion) || '';
-      if (expectedV && localStorage.getItem('pk2_asset_v') !== expectedV) {
-        purgeStaleCachesAsync(expectedV);
-        invalidateSessionCache();
-      }
+      if (expectedV) rememberAssetVersion(expectedV);
       startApplicationBoot();
     });
 

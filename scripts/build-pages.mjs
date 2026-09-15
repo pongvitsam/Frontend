@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { generatePwaIcons } from './generate-pwa-icons.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
@@ -90,14 +91,61 @@ if (fs.existsSync(faviconSrc)) {
   fs.copyFileSync(faviconSrc, path.join(docsDir, 'favicon.svg'));
 }
 
+const iconsDir = path.join(docsDir, 'icons');
+generatePwaIcons(iconsDir);
+fs.writeFileSync(path.join(docsDir, '.nojekyll'), '');
+
+const manifest = {
+  id: PAGES_BASE + '/',
+  name: 'กองบริการธุรกิจจัดการพลังงาน',
+  short_name: 'กองพลังงาน',
+  description: 'คลังแอปพลิเคชันกองบริการธุรกิจจัดการพลังงาน',
+  lang: 'th',
+  dir: 'ltr',
+  start_url: './',
+  scope: './',
+  display: 'standalone',
+  orientation: 'any',
+  background_color: '#f5f3ee',
+  theme_color: '#2c3548',
+  icons: [
+    { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+    { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+    { src: 'icons/icon-192-maskable.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+    { src: 'icons/icon-512-maskable.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+  ],
+};
+fs.writeFileSync(path.join(docsDir, 'manifest.webmanifest'), JSON.stringify(manifest, null, 2) + '\n');
+
+const pwaHeadTags = `<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#2c3548" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#121820" media="(prefers-color-scheme: dark)">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="กองพลังงาน">
+  <meta name="application-name" content="กองพลังงาน">
+  <meta name="description" content="คลังแอปพลิเคชันกองบริการธุรกิจจัดการพลังงาน">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">`;
+
 const faviconTags = `<link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="shortcut icon" href="favicon.svg">`;
+  <link rel="shortcut icon" href="favicon.svg">
+  <link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">`;
+
+const swRegisterScript = `  <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    });
+  }
+  </script>`;
 
 const pagesIndex = `<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  ${pwaHeadTags}
   <title>กองบริการธุรกิจจัดการพลังงาน</title>
   ${faviconTags}
   ${themeScript}
@@ -108,12 +156,14 @@ ${instantBoot}
   <link rel="stylesheet" href="styles.css?v=${ASSET_V}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 </head>
 <body class="min-h-screen flex flex-col transition-all duration-500">
 ${bodyHtml}
   <script src="config.js?v=${ASSET_V}"></script>
   <script src="gas-client.js?v=${ASSET_V}"></script>
   <script src="app.js?v=${ASSET_V}"></script>
+${swRegisterScript}
 </body>
 </html>
 `;
@@ -123,8 +173,11 @@ const gasIndex = `<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#2c3548">
   <title>กองบริการธุรกิจจัดการพลังงาน</title>
   <link rel="icon" href="${PAGES_BASE}/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="${PAGES_BASE}/icons/apple-touch-icon.png">
   ${themeScript}
 ${instantBoot}
   <?!= include('Styles'); ?>
